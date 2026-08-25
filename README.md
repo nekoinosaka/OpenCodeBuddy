@@ -30,8 +30,10 @@
 - A StickS3 firmware build with status, approval, settings, and offline screens.
 - A daily workflow designed to stay out of the way: run `code-buddy` once, then just use `codex`.
 
-## Highlights in v0.1.41
+## Highlights in v0.1.42
 
+- A normal reboot no longer makes the USB-powered landscape clock wait for the Mac: plausible retained RTC time is reused offline, while the 2000-01-01 reset sentinel still requires a fresh trusted sync.
+- `code-buddy doctor` now treats a loaded-but-crashing launchd agent as a real fault instead of reporting the setup ready.
 - The quota meter now keeps the last valid allowance when a fresh account read is unavailable or BLE disconnects, and the Mac bridge restores that value after restarting instead of clearing the device.
 - The Figma-based landscape dashboard shows `RUNNING`, `WAITING`, `IDLE`, or `OFFLINE`, plus a smooth 20-second trace of real input-plus-output token consumption. New samples enter from the right, scroll left, and rise from green toward mint as activity increases.
 - Auto-oriented home surfaces resolve a strong pose before their first frame and remember the last stable home orientation across menus and settings, preventing the portrait-layout flash when returning to an already-landscape device.
@@ -56,7 +58,7 @@ Preferred path:
 Fallback:
 
 ```bash
-esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.41-full.bin
+esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.42-full.bin
 ```
 
 Developer release build:
@@ -162,7 +164,7 @@ The screen auto-powers off after 30 seconds of inactivity and stays on while an 
 | `dizzy`     | you shook the stick         | spiral eyes, wobbling       |
 | `heart`     | approved in under 5s        | floating hearts             |
 
-When the StickS3 is on USB power, has synced time, and has no running or waiting session, it can show the charging clock. On Fridays from 15:00 until midnight, the pet occasionally celebrates: about 4 seconds in each 12-second cycle.
+When the StickS3 is on USB power, its RTC retains valid time, and there is no running or waiting session, it can show the charging clock. The device only needs one successful time sync: after a normal reboot it can keep using retained RTC time while the Mac is temporarily offline. If RTC power is lost and the clock resets to 2000-01-01, it still waits for the next trusted sync. On Fridays from 15:00 until midnight, the pet occasionally celebrates: about 4 seconds in each 12-second cycle.
 
 <details>
 <summary><strong>Characters and custom packs</strong></summary>

@@ -357,6 +357,27 @@ def test_help_only_surfaces_public_user_commands(capsys):
     assert "sessions" not in output
 
 
+def test_doctor_reports_loaded_agent_that_is_not_running():
+    problems = cli._doctor_problems(
+        {
+            "paired_device_id": "dev-1",
+            "real_codex_exists": True,
+            "native_helper_error": None,
+            "shell_integrated": True,
+            "agent_running": False,
+            "launchd": {"loaded": True, "last_exit_status": 1},
+        }
+    )
+
+    assert problems == [
+        {
+            "problem": "The background agent is repeatedly exiting.",
+            "reason": "Launchd is loaded, but the agent is not running (last exit status: 1).",
+            "next": "Run `code-buddy repair`; if it recurs, inspect the launchd error log.",
+        }
+    ]
+
+
 def test_firmware_update_parser_accepts_default_and_explicit_application_image(tmp_path):
     parser = cli.build_parser()
     default = parser.parse_args(["firmware", "update"])

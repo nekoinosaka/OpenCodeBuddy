@@ -857,6 +857,16 @@ static void clockRefreshRtc() {
   if (clockRefreshFromHostSync()) return;
   M5.Rtc.GetTime(&_clkTm);
   M5.Rtc.GetDate(&_clkDt);
+  ClockTimeFields retained = {
+    _clkDt.year,
+    _clkDt.Month,
+    _clkDt.Date,
+    _clkDt.WeekDay,
+    _clkTm.Hours,
+    _clkTm.Minutes,
+    _clkTm.Seconds,
+  };
+  dataRefreshRtcTrust(retained);
 }
 
 static void clockUpdateOrient() {

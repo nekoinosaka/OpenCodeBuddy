@@ -530,6 +530,19 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
                 "next": "Run `code-buddy repair` to reinstall the service.",
             }
         )
+    elif not payload["agent_running"]:
+        last_exit_status = payload["launchd"].get("last_exit_status")
+        status = "unknown" if last_exit_status is None else str(last_exit_status)
+        problems.append(
+            {
+                "problem": "The background agent is repeatedly exiting.",
+                "reason": (
+                    "Launchd is loaded, but the agent is not running "
+                    f"(last exit status: {status})."
+                ),
+                "next": "Run `code-buddy repair`; if it recurs, inspect the launchd error log.",
+            }
+        )
     return problems
 
 

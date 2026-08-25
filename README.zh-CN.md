@@ -30,8 +30,10 @@
 - 一套 StickS3 固件，包含状态页、审批页、设置页和离线页。
 - 一套尽量不打扰日常工作的流程：先跑一次 `code-buddy`，之后直接用 `codex`。
 
-## v0.1.41 亮点
+## v0.1.42 亮点
 
+- 正常重启后，USB 供电的横屏时钟不再等待 Mac 重连：设备会离线复用可信的 RTC 时间；RTC 回到 2000-01-01 时仍会要求下一次可信同步。
+- `code-buddy doctor` 现在会把“launchd 已加载但 Agent 持续崩溃”报告为真实故障，不再误报 ready。
 - 暂时拿不到最新账户额度、返回 `null` 或 BLE 断开时，额度进度不再消失；Mac 桥接进程重启后也会恢复最近一次有效值，而不是清空设备显示。
 - 按 Figma 重做的横屏状态页继续显示 `RUNNING`、`WAITING`、`IDLE` 或 `OFFLINE`，心跳则改为最近 20 秒真实输入加输出 token 消耗曲线；新采样从右侧进入并向左推进，活动越强，颜色越从绿色靠近 mint。
 - 自动旋转首页会在第一帧前判断明确姿态，并在菜单、设置等竖屏页面之间保留最近一次稳定方向，修复设备明明已经横放却先闪一下竖屏再切回横屏的问题。
@@ -56,7 +58,7 @@
 兜底方式：
 
 ```bash
-esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.41-full.bin
+esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.42-full.bin
 ```
 
 开发者本地生成 release 镜像：
@@ -143,7 +145,7 @@ Codex Desktop 任务通过本地 Codex 会话日志以只读方式发现，可�
 | `dizzy`     | 你摇了设备                | 蚊香眼，摇晃                |
 | `heart`     | 在 5 秒内完成批准         | 飘心                        |
 
-当 StickS3 处于 USB 供电、已经同步过时间、且没有运行中或待审批会话时，会进入充电时钟状态。周五 15:00 到午夜之间，宠物会偶尔庆祝：每 12 秒循环里大约庆祝 4 秒。
+当 StickS3 处于 USB 供电、RTC 保留着有效时间、且没有运行中或待审批会话时，会进入充电时钟状态。设备只需成功同步过一次时间；正常重启后即使 Mac 暂时离线，也会继续使用 RTC 时间进入时钟。RTC 丢失供电并回到 2000-01-01 时仍会等待下一次可信同步。周五 15:00 到午夜之间，宠物会偶尔庆祝：每 12 秒循环里大约庆祝 4 秒。
 
 <details>
 <summary><strong>角色和自定义素材包</strong></summary>

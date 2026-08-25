@@ -34,5 +34,26 @@ int main() {
   expect_true(sync.local_epoch == 1710000000 + 8 * 60 * 60,
               "display RTC should apply the timezone offset separately");
 
+  ClockTimeFields retained = {2026, 8, 26, 3, 0, 15, 7};
+  expect_true(clockRetainedRtcPlausible(retained),
+              "a plausible retained RTC should restore offline clock trust after reboot");
+
+  retained.year = 2000;
+  expect_true(!clockRetainedRtcPlausible(retained),
+              "the StickS3 reset-date sentinel must not unlock the offline clock");
+
+  retained = {2026, 2, 30, 1, 12, 0, 0};
+  expect_true(!clockRetainedRtcPlausible(retained),
+              "an impossible retained calendar date must remain untrusted");
+
+  retained = {2026, 8, 26, 3, 0, 15, 7};
+  expect_true(clockRtcTrustAfterRefresh(false, retained),
+              "refreshing a plausible retained RTC should unlock the offline clock");
+  retained.year = 2000;
+  expect_true(!clockRtcTrustAfterRefresh(false, retained),
+              "refreshing a reset RTC must not unlock the offline clock");
+  expect_true(clockRtcTrustAfterRefresh(true, retained),
+              "a host-synced clock must stay trusted across later RTC reads");
+
   return 0;
 }

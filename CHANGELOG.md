@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.42 - 2026-08-26
+
+- Restored the charging clock after a normal device reboot by validating and reusing plausible retained RTC time while the Mac is temporarily offline; the 2000-01-01 reset sentinel remains untrusted.
+- Made `code-buddy doctor` report a loaded launchd service whose agent is repeatedly exiting instead of incorrectly declaring the setup ready.
+
 ## 0.1.41 - 2026-07-23
 
 - Kept the last valid Codex allowance visible when a fresh account-rate-limit read is temporarily unavailable, malformed, or reported as `null`.

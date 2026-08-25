@@ -87,10 +87,14 @@ inline const char* dataScenarioName() {
   return "none";
 }
 
-// Set true once the bridge sends a time sync — until then the RTC may
-// hold whatever was on the coin cell (or 2000-01-01 if it lost power).
+// Set true after a bridge time sync or after a plausible retained RTC value
+// is read. A lost RTC battery resets the StickS3 clock to 2000-01-01, which
+// stays untrusted until the bridge sends fresh time.
 static bool _rtcValid = false;
 inline bool dataRtcValid() { return _rtcValid; }
+inline void dataRefreshRtcTrust(const ClockTimeFields& fields) {
+  _rtcValid = clockRtcTrustAfterRefresh(_rtcValid, fields);
+}
 
 static OtaAuthorizationReplayState _otaAuthorizationReplay =
   otaAuthorizationReplayInitial();

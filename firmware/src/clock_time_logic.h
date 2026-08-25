@@ -18,6 +18,32 @@ struct ClockSyncEpochs {
   int64_t local_epoch;
 };
 
+inline bool clockRetainedRtcPlausible(const ClockTimeFields& fields) {
+  if (fields.year < 2024 || fields.year > 2099 ||
+      fields.month < 1 || fields.month > 12 ||
+      fields.week_day < 0 || fields.week_day > 6 ||
+      fields.hours < 0 || fields.hours > 23 ||
+      fields.minutes < 0 || fields.minutes > 59 ||
+      fields.seconds < 0 || fields.seconds > 59) {
+    return false;
+  }
+  static const uint8_t daysPerMonth[] = {
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+  };
+  uint8_t maxDate = daysPerMonth[fields.month - 1];
+  const bool leapYear = fields.year % 4 == 0 &&
+    (fields.year % 100 != 0 || fields.year % 400 == 0);
+  if (fields.month == 2 && leapYear) maxDate = 29;
+  return fields.date >= 1 && fields.date <= maxDate;
+}
+
+inline bool clockRtcTrustAfterRefresh(
+  bool alreadyTrusted,
+  const ClockTimeFields& fields
+) {
+  return alreadyTrusted || clockRetainedRtcPlausible(fields);
+}
+
 inline constexpr ClockSyncEpochs clockSyncEpochs(
   int64_t utc_epoch,
   int32_t timezone_offset_seconds
