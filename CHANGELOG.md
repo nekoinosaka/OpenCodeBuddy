@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.44 - 2026-08-31
+
+- Pinned the native BLE Helper deployment target to macOS 13 so builds made on prerelease macOS versions remain launchable on every supported Mac.
+
 ## 0.1.43 - 2026-08-31
 
 - Restarted the owned Codex app-server after an account rate-limit read error so refreshed credentials can restore live allowance updates automatically while the last valid meter remains visible.
