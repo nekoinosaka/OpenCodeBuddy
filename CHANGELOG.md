@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.43 - 2026-08-31
+
+- Restarted the owned Codex app-server after an account rate-limit read error so refreshed credentials can restore live allowance updates automatically while the last valid meter remains visible.
+
 ## 0.1.42 - 2026-08-26
 
 - Restored the charging clock after a normal device reboot by validating and reusing plausible retained RTC time while the Mac is temporarily offline; the 2000-01-01 reset sentinel remains untrusted.

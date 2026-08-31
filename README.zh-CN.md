@@ -30,8 +30,9 @@
 - 一套 StickS3 固件，包含状态页、审批页、设置页和离线页。
 - 一套尽量不打扰日常工作的流程：先跑一次 `code-buddy`，之后直接用 `codex`。
 
-## v0.1.42 亮点
+## v0.1.43 亮点
 
+- Codex app-server 的旧凭证失效时，实时额度更新会自动恢复；恢复期间仍保留最近一次有效额度。
 - 正常重启后，USB 供电的横屏时钟不再等待 Mac 重连：设备会离线复用可信的 RTC 时间；RTC 回到 2000-01-01 时仍会要求下一次可信同步。
 - `code-buddy doctor` 现在会把“launchd 已加载但 Agent 持续崩溃”报告为真实故障，不再误报 ready。
 - 暂时拿不到最新账户额度、返回 `null` 或 BLE 断开时，额度进度不再消失；Mac 桥接进程重启后也会恢复最近一次有效值，而不是清空设备显示。
@@ -58,7 +59,7 @@
 兜底方式：
 
 ```bash
-esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.42-full.bin
+esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.43-full.bin
 ```
 
 开发者本地生成 release 镜像：

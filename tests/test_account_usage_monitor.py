@@ -428,6 +428,68 @@ def test_monitor_restarts_its_owned_app_server_after_process_exit_before_reconne
     assert terminated == [first_process, second_process]
 
 
+def test_monitor_restarts_its_owned_app_server_after_rate_limit_read_error(monkeypatch):
+    first_process = _FakeProcess()
+    second_process = _FakeProcess()
+    launches: list[_FakeProcess] = []
+    terminated: list[_FakeProcess] = []
+    connections: list[_FakeWebSocket] = []
+    seen: list[object] = []
+    original_sleep = asyncio.sleep
+
+    async def no_wait_retry(_: float) -> None:
+        await original_sleep(0)
+
+    monkeypatch.setattr(account_usage_monitor.asyncio, "sleep", no_wait_retry)
+
+    def launch(*_) -> _FakeProcess:
+        process = [first_process, second_process][len(launches)]
+        launches.append(process)
+        return process
+
+    async def exercise() -> None:
+        first_socket = _FakeWebSocket(asyncio.Queue())
+        second_socket = _FakeWebSocket(asyncio.Queue())
+        await first_socket.deliver({"id": 1, "result": {}})
+        await first_socket.deliver(
+            {
+                "id": 2,
+                "error": {
+                    "code": -32603,
+                    "message": "401 Unauthorized: token_invalidated",
+                },
+            }
+        )
+        await second_socket.deliver({"id": 4, "result": {}})
+        await second_socket.deliver({"id": 5, "result": _rate_limits(21, 9)})
+
+        def connect(_: str) -> _FakeWebSocket:
+            socket = [first_socket, second_socket][len(connections)]
+            connections.append(socket)
+            return socket
+
+        async def ready(_: int) -> None:
+            return None
+
+        monitor = AccountUsageMonitor(
+            codex_path="/usr/local/bin/codex-real",
+            on_usage=seen.append,
+            app_server_start=launch,
+            wait_until_ready=ready,
+            websocket_connect=connect,
+            terminate_process=terminated.append,
+        )
+        await monitor.start()
+        await _wait_for(lambda: seen == [UsageDisplay(five_hour_remaining=79, seven_day_remaining=91)])
+        await monitor.stop()
+
+    asyncio.run(exercise())
+
+    assert len(launches) == 2
+    assert len(connections) == 2
+    assert terminated == [first_process, second_process]
+
+
 def test_monitor_withdraws_display_after_freshness_expires_while_reconnecting():
     process = _FakeProcess()
     seen: list[object] = []

@@ -265,6 +265,9 @@ class AccountUsageMonitor:
         request_id = message.get("id")
         if isinstance(request_id, int) and request_id in self._read_request_ids:
             self._read_request_ids.remove(request_id)
+            if "error" in message:
+                self._stop_process()
+                raise RuntimeError("Codex account rate-limit read failed")
             if "result" in message:
                 self._limits = UsageLimits.from_read_result(message["result"], observed_at=self._now())
                 await self._publish_display()

@@ -30,8 +30,9 @@
 - A StickS3 firmware build with status, approval, settings, and offline screens.
 - A daily workflow designed to stay out of the way: run `code-buddy` once, then just use `codex`.
 
-## Highlights in v0.1.42
+## Highlights in v0.1.43
 
+- Live quota updates now recover automatically when a stale Codex app-server credential is rejected, while the last valid allowance remains visible during recovery.
 - A normal reboot no longer makes the USB-powered landscape clock wait for the Mac: plausible retained RTC time is reused offline, while the 2000-01-01 reset sentinel still requires a fresh trusted sync.
 - `code-buddy doctor` now treats a loaded-but-crashing launchd agent as a real fault instead of reporting the setup ready.
 - The quota meter now keeps the last valid allowance when a fresh account read is unavailable or BLE disconnects, and the Mac bridge restores that value after restarting instead of clearing the device.
@@ -58,7 +59,7 @@ Preferred path:
 Fallback:
 
 ```bash
-esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.42-full.bin
+esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.43-full.bin
 ```
 
 Developer release build:
