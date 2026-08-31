@@ -28,7 +28,8 @@ def build_bundled_native_helper() -> Path:
             shutil.copyfile(plist, plist_destination)
             subprocess.run(
                 [
-                    "swiftc", "-parse-as-library", "-O",
+                    "swiftc", "-target", "arm64-apple-macosx13.0",
+                    "-parse-as-library", "-O",
                     "-framework", "AppKit", "-framework", "CoreBluetooth",
                     str(source), "-o", str(executable),
                 ],

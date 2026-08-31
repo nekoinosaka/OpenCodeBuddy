@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.45 - 2026-08-31
+
+- Applied the macOS 13 deployment target to the Helper rebuilt by `code-buddy repair`, with an artifact-level regression test for the compiled minimum OS version.
+
 ## 0.1.44 - 2026-08-31
 
 - Pinned the native BLE Helper deployment target to macOS 13 so builds made on prerelease macOS versions remain launchable on every supported Mac.

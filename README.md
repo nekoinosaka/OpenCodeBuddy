@@ -30,9 +30,9 @@
 - A StickS3 firmware build with status, approval, settings, and offline screens.
 - A daily workflow designed to stay out of the way: run `code-buddy` once, then just use `codex`.
 
-## Highlights in v0.1.44
+## Highlights in v0.1.45
 
-- The native BLE Helper now targets macOS 13 explicitly, keeping release builds launchable across every supported macOS version even when built on prerelease systems.
+- Both the packaged and locally rebuilt native BLE Helper now target macOS 13 explicitly, keeping release and repair builds launchable across every supported macOS version even when built on prerelease systems.
 - Live quota updates now recover automatically when a stale Codex app-server credential is rejected, while the last valid allowance remains visible during recovery.
 - A normal reboot no longer makes the USB-powered landscape clock wait for the Mac: plausible retained RTC time is reused offline, while the 2000-01-01 reset sentinel still requires a fresh trusted sync.
 - `code-buddy doctor` now treats a loaded-but-crashing launchd agent as a real fault instead of reporting the setup ready.
@@ -60,7 +60,7 @@ Preferred path:
 Fallback:
 
 ```bash
-esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.44-full.bin
+esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.45-full.bin
 ```
 
 Developer release build:
