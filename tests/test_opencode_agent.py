@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from opencode_buddy.agent import BuddyAgent
 
@@ -124,6 +125,32 @@ def test_device_denial_resolves_permission_ask(tmp_path):
         return await task
 
     assert asyncio.run(exercise())["decision"] == "deny"
+
+
+def test_unknown_device_decision_falls_back_to_host_prompt(tmp_path, caplog):
+    async def exercise():
+        agent = BuddyAgent(
+            tmp_path / "state.json",
+            clock=lambda: 100.0,
+            opencode_permission_timeout=5.0,
+        )
+        agent._ble = _CapturingBle()
+        agent._ble_connected = True
+        task = asyncio.create_task(
+            agent._handle_command(
+                {"cmd": "permission_ask", "permission": _permission_payload()}
+            )
+        )
+        await _wait_for_waiter(agent)
+        # A decision the firmware never sends must never be read as approval.
+        await agent._handle_device_permission("per-1", "cancel")
+        return await task
+
+    with caplog.at_level(logging.WARNING, logger="opencode_buddy.agent"):
+        response = asyncio.run(exercise())
+
+    assert response["decision"] == "ask"
+    assert any("unexpected device permission decision" in record.message for record in caplog.records)
 
 
 def test_permission_ask_times_out_to_host_prompt(tmp_path):

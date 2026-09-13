@@ -108,6 +108,11 @@ def install_windows_service(
             schtasks_bin=schtasks_bin,
             check=True,
         )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        detail = getattr(exc, "stderr", None) or str(exc)
+        raise RuntimeError(
+            f"could not register the background task with schtasks: {detail}"
+        ) from exc
     finally:
         with contextlib.suppress(OSError):
             xml_path.unlink()

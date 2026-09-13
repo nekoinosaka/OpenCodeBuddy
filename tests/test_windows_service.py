@@ -4,6 +4,8 @@ import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import pytest
+
 from opencode_buddy import windows_service
 
 _NS = {"t": "http://schemas.microsoft.com/windows/2004/02/mit/task"}
@@ -99,3 +101,22 @@ def test_status_degrades_when_schtasks_is_unavailable(monkeypatch):
     assert status["loaded"] is False
     assert status["running"] is False
     assert "schtasks unavailable" in status["raw"]
+
+
+def test_install_surfaces_a_readable_error_when_schtasks_is_unavailable(
+    monkeypatch, tmp_path: Path
+):
+    def fake_run(*args, **kwargs):
+        raise PermissionError("access denied")
+
+    monkeypatch.setattr(windows_service.subprocess, "run", fake_run)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        windows_service.install_windows_service(
+            python_executable="python.exe",
+            state_path=tmp_path / "state.json",
+            repo_root=tmp_path / "repo",
+            log_dir=tmp_path / "logs",
+            schtasks_bin="schtasks",
+        )
+    assert "could not register the background task" in str(excinfo.value)

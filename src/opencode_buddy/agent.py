@@ -810,7 +810,16 @@ class BuddyAgent:
         waiter = self._opencode_permission_waiters.get(str(request_id))
         if waiter is None or waiter.done():
             return
-        waiter.set_result(decision if decision in {"once", "deny", "always"} else "once")
+        if decision in {"once", "deny", "always"}:
+            waiter.set_result(decision)
+            return
+        # Fail safe: an unexpected decision (protocol drift, a future cancel
+        # marker, or a decode error) must never be treated as approval.
+        _LOG.warning(
+            "unexpected device permission decision %r; falling back to host prompt",
+            decision,
+        )
+        waiter.set_result("ask")
 
     async def _opencode_question_ask(self, payload: dict[str, object]) -> dict[str, object]:
         request_id = str(payload.get("request_id", ""))

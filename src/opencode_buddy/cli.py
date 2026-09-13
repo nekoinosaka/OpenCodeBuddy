@@ -225,7 +225,16 @@ async def _setup(args: argparse.Namespace, *, repair: bool = False) -> int:
 
     await _pair_selected_device(store, selected)
     plugin_path = setup_flow.install_opencode_plugin()
-    _install_agent_service(state_path)
+    try:
+        _install_agent_service(state_path)
+    except (OSError, RuntimeError) as exc:
+        print(f"Could not register the background service: {exc}", file=sys.stderr)
+        print(
+            "The device is paired and the OpenCode plugin is installed. "
+            "Fix the service, then run `opencode-buddy repair`.",
+            file=sys.stderr,
+        )
+        return 1
 
     current = store.load()
     next_state = replace(
@@ -395,7 +404,11 @@ def _install_opencode_plugin(_: argparse.Namespace) -> int:
 
 
 def _service_install(args: argparse.Namespace) -> int:
-    _install_agent_service(Path(args.state_path))
+    try:
+        _install_agent_service(Path(args.state_path))
+    except (OSError, RuntimeError) as exc:
+        print(f"Could not register the background service: {exc}", file=sys.stderr)
+        return 1
     store = BridgeStateStore(args.state_path)
     current = store.load()
     store.save(replace(current, service_installed=True))
