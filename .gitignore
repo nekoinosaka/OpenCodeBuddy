@@ -16,3 +16,4 @@ CB*.swift
 firmware/.pio/
 firmware/.sconsign*
 firmware/generated/ota-trust/
+reflection.md
