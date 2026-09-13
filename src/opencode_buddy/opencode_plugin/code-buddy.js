@@ -14,7 +14,6 @@ const FORWARDED_EVENTS = new Set([
   "message.updated",
   "message.part.updated",
   "permission.updated",
-  "permission.asked",
   "permission.replied",
 ])
 
@@ -71,6 +70,13 @@ function worthForwarding(event) {
   return true
 }
 
+function decisionToReply(decision) {
+  if (decision === "deny") return "reject"
+  if (decision === "always") return "always"
+  if (decision === "once") return "once"
+  return null
+}
+
 export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
   const log = async (level, message, extra) => {
     try {
@@ -78,6 +84,70 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
         body: { service: "code-buddy", level, message, extra },
       })
     } catch {}
+  }
+
+  const replyToOpenCode = async (permission, decision) => {
+    const reply = decisionToReply(decision)
+    if (!reply || !permission?.id) return false
+    const dir = permission.directory || directory || undefined
+    const attempts = []
+    if (typeof client?.permission?.reply === "function") {
+      attempts.push([
+        "permission.reply",
+        () => client.permission.reply({ requestID: permission.id, reply, directory: dir }),
+      ])
+    }
+    if (typeof client?.permission?.respond === "function") {
+      attempts.push([
+        "permission.respond",
+        () =>
+          client.permission.respond({
+            sessionID: permission.sessionID,
+            permissionID: permission.id,
+            response: reply,
+            directory: dir,
+          }),
+      ])
+    }
+    if (typeof client?.postSessionIdPermissionsPermissionId === "function") {
+      attempts.push([
+        "postSessionIdPermissionsPermissionId",
+        () =>
+          client.postSessionIdPermissionsPermissionId({
+            path: { id: permission.sessionID, permissionID: permission.id },
+            body: { response: reply },
+          }),
+      ])
+    }
+    if (typeof client?.postSessionByIdPermissionsByPermissionId === "function") {
+      attempts.push([
+        "postSessionByIdPermissionsByPermissionId",
+        () =>
+          client.postSessionByIdPermissionsByPermissionId({
+            path: { id: permission.sessionID, permissionID: permission.id },
+            body: { response: reply },
+          }),
+      ])
+    }
+    if (attempts.length === 0) {
+      await log("warn", "no permission reply method on client", {
+        permission: Object.keys(client?.permission ?? {}),
+      })
+      return false
+    }
+    for (const [name, attempt] of attempts) {
+      try {
+        const result = await attempt()
+        if (result && typeof result === "object" && result.error) {
+          await log("warn", "permission reply rejected", { method: name, error: String(result.error) })
+          continue
+        }
+        return true
+      } catch (error) {
+        await log("warn", "permission reply failed", { method: name, error: String(error) })
+      }
+    }
+    return false
   }
 
   await request(
@@ -89,37 +159,38 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
     2000,
   )
   await log("info", "Code Buddy bridge plugin initialized", { socket: SOCKET_PATH })
+  try {
+    await log("info", "Code Buddy client surface", {
+      top: Object.keys(client ?? {}).sort(),
+      permission: Object.keys(client?.permission ?? {}).sort(),
+    })
+  } catch {}
 
   return {
     event: async ({ event }) => {
+      if (event?.type === "permission.asked") {
+        const permission = event.properties || {}
+        await log("info", "permission.asked received", {
+          id: permission.id,
+          tool: permission.type,
+        })
+        const response = await request(
+          { cmd: "permission_ask", permission },
+          65000,
+        )
+        const delivered = await replyToOpenCode(permission, response?.decision)
+        await log("info", "permission decision", {
+          id: permission.id,
+          decision: response?.decision ?? "ask",
+          delivered,
+        })
+        return
+      }
       if (!worthForwarding(event)) return
       await request(
         { cmd: "notify", event, serverUrl: serverUrl ? String(serverUrl) : "" },
         2000,
       )
-    },
-    "permission.ask": async (permission, output) => {
-      const response = await request({ cmd: "permission_ask", permission }, 70000)
-      const decision = response?.decision
-      if (decision === "once") {
-        output.status = "allow"
-      } else if (decision === "deny") {
-        output.status = "deny"
-      } else if (decision === "always") {
-        let persisted = false
-        try {
-          const result = await client?.postSessionByIdPermissionsByPermissionId?.({
-            path: { id: permission.sessionID, permissionID: permission.id },
-            body: { response: "always" },
-          })
-          persisted = Boolean(result)
-        } catch {
-          persisted = false
-        }
-        output.status = persisted ? "ask" : "allow"
-      } else {
-        output.status = "ask"
-      }
     },
   }
 }

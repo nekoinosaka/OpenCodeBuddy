@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
@@ -118,18 +119,21 @@ class OpenCodeServerClient:
 
     def respond_permission(
         self,
-        session_id: str,
-        permission_id: str,
+        request_id: str,
         response: str,
         *,
-        remember: Optional[list[str]] = None,
+        directory: Optional[str] = None,
+        message: Optional[str] = None,
     ) -> bool:
         if response not in _ALLOWED_PERMISSION_RESPONSES:
             raise ValueError(f"unsupported permission response: {response}")
-        body: dict[str, Any] = {"response": response}
-        if remember:
-            body["remember"] = list(remember)
-        url = f"{self.base_url}/session/{session_id}/permissions/{permission_id}"
+        body: dict[str, Any] = {"reply": response}
+        if message:
+            body["message"] = message
+        query = {"directory": directory} if directory else None
+        url = f"{self.base_url}/permission/{urllib.parse.quote(str(request_id), safe='')}/reply"
+        if query:
+            url = f"{url}?{urllib.parse.urlencode(query)}"
         status, _ = self._fetch(
             "POST", url, json.dumps(body).encode("utf-8"), self.timeout
         )

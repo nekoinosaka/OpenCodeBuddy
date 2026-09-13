@@ -431,6 +431,7 @@ class BuddyAgent:
             "paired_device_id": current.paired_device_id,
             "paired_device_name": current.paired_device_name,
             "socket_path": str(self.socket_path),
+            "opencode_server_url": self._opencode_server_url,
             "snapshot": snapshot.as_ble_payload(),
             "sessions": [session.as_dict() for session in self.catalog.sessions(now=self.clock())],
             "ota": self._ota_state.public_payload(include_identity=False)
@@ -566,7 +567,7 @@ class BuddyAgent:
                 now=self.clock(),
             )
         except Exception:
-            _LOG.warning("OpenCode session poll failed", exc_info=True)
+            _LOG.debug("OpenCode session poll failed", exc_info=True)
             return
         self._apply_readonly_sessions(readonly)
         await self._publish_state()
@@ -769,13 +770,16 @@ class BuddyAgent:
         if session_id is None:
             return
         response = "reject" if decision == "deny" else decision if decision == "always" else "once"
+        directory = self._opencode_adapter.directory(session_id) or None
         try:
-            await asyncio.to_thread(
+            delivered = await asyncio.to_thread(
                 self._server_client.respond_permission,
-                session_id,
                 str(request_id),
                 response,
+                directory=directory,
             )
+            if not delivered:
+                _LOG.warning("OpenCode rejected permission reply %s", request_id)
         except Exception:
             _LOG.warning("failed to deliver permission decision to OpenCode", exc_info=True)
         await self._resolve_opencode_permission(str(request_id))

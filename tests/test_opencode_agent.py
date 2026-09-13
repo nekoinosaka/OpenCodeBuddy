@@ -221,8 +221,8 @@ class _FakeServerClient:
     def __init__(self) -> None:
         self.calls = []
 
-    def respond_permission(self, session_id, permission_id, response, *, remember=None):
-        self.calls.append((session_id, permission_id, response))
+    def respond_permission(self, request_id, response, *, directory=None, message=None):
+        self.calls.append((request_id, response, directory))
         return True
 
 
@@ -256,5 +256,5 @@ def test_event_driven_device_decision_replies_via_server(tmp_path):
     server, waiting, resolved = asyncio.run(exercise())
 
     assert waiting == 1
-    assert server.calls == [("ses-9", "per-9", "reject")]
+    assert server.calls == [("per-9", "reject", None)]
     assert resolved.waiting == 0
