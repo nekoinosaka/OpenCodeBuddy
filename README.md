@@ -14,48 +14,45 @@
 <h1 align="center">Code Buddy</h1>
 
 <p align="center">
-  A StickS3 Codex companion adapted from
-  <a href="https://github.com/anthropics/claude-desktop-buddy">Claude Desktop Buddy</a>.
+  A StickS3 companion for <a href="https://opencode.ai">OpenCode</a>, adapted from
+  <a href="https://github.com/anthropics/claude-desktop-buddy">Claude Desktop Buddy</a>
+  and <a href="https://github.com/CharlexH/CodeBuddy">CodeBuddy</a>.
 </p>
 
 <p align="center">
-  Flash the device once, run <code>code-buddy</code> once on macOS, then keep using <code>codex</code> normally while approvals and live session status move to dedicated hardware.
+  Flash the device once, run <code>code-buddy</code> once on macOS, then keep using
+  <code>opencode</code> normally while approvals and live session status move to dedicated hardware.
 </p>
 
 > Building your own hardware client? See [firmware/REFERENCE.md](firmware/REFERENCE.md) for the BLE protocol and JSON payloads.
 
 ## What ships
 
-- A macOS bridge that pairs with the StickS3, syncs time, installs the native BLE helper, and manages the local `codex` shim.
+- A macOS bridge that pairs with the StickS3, syncs time, installs the native BLE helper, and installs an OpenCode plugin.
+- An OpenCode plugin that forwards live session events and routes permission prompts to the device.
 - A StickS3 firmware build with status, approval, settings, and offline screens.
-- A daily workflow designed to stay out of the way: run `code-buddy` once, then just use `codex`.
+- A daily workflow designed to stay out of the way: run `code-buddy` once, then just use `opencode`.
 
-## Highlights in v0.1.45
+## How it works
 
-- Both the packaged and locally rebuilt native BLE Helper now target macOS 13 explicitly, keeping release and repair builds launchable across every supported macOS version even when built on prerelease systems.
-- Live quota updates now recover automatically when a stale Codex app-server credential is rejected, while the last valid allowance remains visible during recovery.
-- A normal reboot no longer makes the USB-powered landscape clock wait for the Mac: plausible retained RTC time is reused offline, while the 2000-01-01 reset sentinel still requires a fresh trusted sync.
-- `code-buddy doctor` now treats a loaded-but-crashing launchd agent as a real fault instead of reporting the setup ready.
-- The quota meter now keeps the last valid allowance when a fresh account read is unavailable or BLE disconnects, and the Mac bridge restores that value after restarting instead of clearing the device.
-- The Figma-based landscape dashboard shows `RUNNING`, `WAITING`, `IDLE`, or `OFFLINE`, plus a smooth 20-second trace of real input-plus-output token consumption. New samples enter from the right, scroll left, and rise from green toward mint as activity increases.
-- Auto-oriented home surfaces resolve a strong pose before their first frame and remember the last stable home orientation across menus and settings, preventing the portrait-layout flash when returning to an already-landscape device.
-- The portrait home screen keeps its original 90px-high, 1x ASCII pet while restoring the built-in 6x8 font used by its centering geometry; `HH:MM:SS` is one centered native-14pt row with dim seconds, and the date uses native 8pt.
-- Native-size JetBrains Mono Regular/Bold labels and slashed-zero numerals keep the compact hierarchy crisp; zero counts remain dim white, seconds 60%-white, and date text full white.
-- The full-width 29-by-3 quota matrix retains its 6 px dots and diagonal running wave, aligned to the new 4 px footer baseline and left edge.
-- The landscape clock and dashboard use native-size JetBrains Mono Regular/Bold bitmap subsets with no fractional stretching; non-ASCII UI text stays on one proportional font, leaving ample application flash free.
-- One short chime plays after a complete Codex turn. This includes managed CLI sessions and main Codex Desktop tasks discovered from local session logs; repeated snapshots and subagent turns are de-duplicated.
-- Secure Wi-Fi OTA supports manual Mac-push updates and an optional automatic update mode, with signed manifests, physical confirmation, rollback checks, and compact on-device progress.
-- The charging clock and active runtime share the landscape layout while keeping approval and settings interactions readable.
+Code Buddy has three moving parts:
+
+1. **Device firmware** advertises the Nordic UART Service as `OpenCode-XXXX` and renders the pet, stats, and approval screens.
+2. **`code-buddy` agent** runs as a launchd service, owns the Bluetooth link, and keeps the device snapshot updated.
+3. **OpenCode plugin** (`~/.config/opencode/plugins/code-buddy.js`) runs inside OpenCode. On startup it hands the agent the server URL, forwards bus events (`session.status`, `message.updated`, `message.part.updated`, `permission.*`), and implements the `permission.ask` hook so the device can approve or deny.
+
+When a permission prompt is pending, it is shown on the StickS3: **A** approves once, **B** denies. If the device is offline, the prompt falls back to the normal OpenCode UI (the agent waits up to 60 seconds, then returns `ask`).
+
+Session history and token/cost totals are read from the OpenCode server (`GET /session`). The plugin supplies the server URL automatically, so history works whenever the agent can reach that server. Set `OPENCODE_SERVER_URL` to point at a standalone `opencode serve` instance instead.
 
 ## Quick start
 
 ### 1. Flash the StickS3
 
-Download `code-buddy-sticks3-v{version}-full.bin` from GitHub Releases and flash it at `0x0`.
+Download `code-buddy-sticks3-v{version}-full.bin` from Releases and flash it at `0x0`.
 
-Preferred path:
-
-- If a release includes a web flasher, use it and write the merged image at `0x0`.
+<details>
+<summary>Flash commands</summary>
 
 Fallback:
 
@@ -72,26 +69,41 @@ Developer release build:
 The build produces two distinct artifacts: `*-full.bin` is the USB recovery/
 bootstrap image, while `*-app.bin` is the application-only image accepted by
 OTA. Never pass the merged full image to the OTA command.
+</details>
 
 ### 2. Install on macOS
 
+Build from source:
+
 ```bash
-brew install CharlexH/tap/code-buddy
-code-buddy
+git clone https://github.com/nekoinosaka/CodeBuddy.git
+cd CodeBuddy
+python3 -m venv .venv
+.venv/bin/pip install -e '.[dev]'
+.venv/bin/code-buddy
 ```
 
 On first run, Code Buddy will:
 
 - install the native Bluetooth helper
-- pair with a `Codex-*` device
+- pair with an `OpenCode-*` device
 - sync device time
 - install the launchd agent
-- install the local `codex` shim
-- add `~/.code-buddy/bin` to `~/.zprofile`
+- install the OpenCode plugin at `~/.config/opencode/plugins/code-buddy.js`
 
 Host-only updates do not require reflashing when the installed firmware remains
 protocol-compatible. Features that change the display, sound, or OTA runtime do
 require the matching firmware release.
+
+### 3. Use it normally
+
+```bash
+opencode
+```
+
+Restart OpenCode after setup so it loads the plugin. From there, Code Buddy keeps the bridge alive and shows approval prompts on the StickS3 while you keep your normal flow.
+
+Session events arrive through the plugin, so no shell shim or wrapper is needed — run `opencode` exactly as you always do.
 
 ### Wireless firmware updates
 
@@ -112,33 +124,9 @@ code-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/firmwa
 The background agent remains the sole Bluetooth owner. It signs an immutable
 one-time manifest using the already-pinned trust under `~/.code-buddy/ota`,
 serves the image over short-lived local HTTPS, and waits for physical A-button
-confirmation. Trust is never generated or rotated by this command. If trust is
-missing, repeat the explicit USB trust bootstrap. B or Ctrl-C cancels before
-the boot slot is committed; the Mac reports success only after reconnection
-proves the embedded target version is running and first-boot health is valid.
-
-Turn on **Settings > auto ota** to let the device accept a newer trusted release
-without opening the manual confirmation screen. Automatic updates still use the
-same signed manifest, version policy, boot-health validation, and rollback path.
+confirmation. B or Ctrl-C cancels before the boot slot is committed.
 
 The native BLE helper runs as a background macOS agent during normal use, so reconnect attempts should not open a helper window or steal focus. macOS may still show the first Bluetooth permission prompt; that system prompt cannot be skipped. For helper debugging, start it with `CODE_BUDDY_BLE_HELPER_DEBUG_WINDOW=1` to show the event log window.
-
-### 3. Use it normally
-
-```bash
-codex
-```
-
-Open a new shell after setup. From there, Code Buddy keeps the bridge alive and shows approval prompts on the StickS3 while you keep your normal CLI flow.
-
-Codex Desktop tasks are discovered read-only from local Codex session logs. They
-can update the dashboard, unread count, and completion chime, but Desktop
-approval requests are not proxied through the device.
-
-Large local session-log scans run outside the bridge's async event loop, so they
-cannot delay the 10-second BLE keepalive and accidentally trigger the device's
-30-second offline state. If a core bridge task exits unexpectedly, the agent
-exits cleanly and the existing launchd service restarts it.
 
 ## Controls
 

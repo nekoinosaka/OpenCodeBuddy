@@ -1,4 +1,4 @@
-from codex_buddy.text_width import clip_text_by_width
+from opencode_buddy.text_width import clip_text_by_width
 
 
 def test_clip_text_by_width_counts_cjk_as_double_width():

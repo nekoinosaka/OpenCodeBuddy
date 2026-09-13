@@ -63,11 +63,11 @@ int main() {
 
   expect_true(
     screenOrientRuntimeEligible(true, false, false, false, true, false, false),
-    "active Codex work in the normal home screen should permit runtime landscape"
+    "active OpenCode work in the normal home screen should permit runtime landscape"
   );
   expect_true(
     screenOrientRuntimeEligible(true, false, false, false, false, true, false),
-    "waiting Codex work in the normal home screen should permit runtime landscape"
+    "waiting OpenCode work in the normal home screen should permit runtime landscape"
   );
   expect_true(
     screenOrientRuntimeEligible(true, false, false, false, false, false, true),

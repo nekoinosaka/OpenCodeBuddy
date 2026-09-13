@@ -21,7 +21,7 @@ static const char* DER_HEX = "3006020101020101";
 static OtaAuthorizationInput validAuthorization() {
   OtaAuthorizationInput input = {};
   input.action = "code-buddy-firmware-install-v1";
-  input.device = "Codex-4DAD";
+  input.device = "OpenCode-4DAD";
   input.expiresAt = 1720000120;
   input.generation = 9;
   input.issuedAt = 1720000000;
@@ -64,7 +64,7 @@ static void testCanonicalBytesMatchHostContract() {
   char canonical[OTA_AUTHORIZATION_MAX_BYTES];
   size_t length = otaAuthorizationCanonicalBytes(input, canonical, sizeof(canonical));
   const char* expected =
-    "{\"action\":\"code-buddy-firmware-install-v1\",\"device\":\"Codex-4DAD\","
+    "{\"action\":\"code-buddy-firmware-install-v1\",\"device\":\"OpenCode-4DAD\","
     "\"expiresAt\":1720000120,\"generation\":9,\"issuedAt\":1720000000,"
     "\"manifestUrl\":\"https://192.168.44.8:49321/0123456789abcdefghijklmn/manifest.json\","
     "\"nonce\":\"abcdefghijklmnopqrstuvwx\","
@@ -113,7 +113,7 @@ static void testSignatureDeviceAndTimeChecks() {
   OtaAuthorizationReplayState replay = otaAuthorizationReplayInitial();
   VerifyContext context = verifier();
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", true, 1720000060,
+                input, "OpenCode-4DAD", true, 1720000060,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_OK &&
               context.called,
               "matching device, trusted current time, and good signature should pass");
@@ -121,7 +121,7 @@ static void testSignatureDeviceAndTimeChecks() {
   replay = otaAuthorizationReplayInitial();
   context = verifier(false);
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", true, 1720000060,
+                input, "OpenCode-4DAD", true, 1720000060,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_SIGNATURE_INVALID &&
               context.called && !replay.entries[0].valid,
               "bad signature must fail without polluting replay state");
@@ -129,44 +129,44 @@ static void testSignatureDeviceAndTimeChecks() {
   replay = otaAuthorizationReplayInitial();
   context = verifier();
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-BEEF", true, 1720000060,
+                input, "OpenCode-BEEF", true, 1720000060,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_DEVICE_MISMATCH &&
               !context.called,
               "offer must bind to the device name derived from its BT MAC");
-  input.device = "codex-4dad";
+  input.device = "opencode-4dad";
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "codex-4dad", true, 1720000060,
+                input, "opencode-4dad", true, 1720000060,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_FIELD_INVALID,
-              "device format must be exact Codex-XXXX uppercase hexadecimal");
+              "device format must be exact OpenCode-XXXX uppercase hexadecimal");
 
   input = validAuthorization();
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", false, 1720000060,
+                input, "OpenCode-4DAD", false, 1720000060,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_TIME_UNTRUSTED,
               "signed authorization must fail closed without trusted epoch");
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", true, input.issuedAt - 1,
+                input, "OpenCode-4DAD", true, input.issuedAt - 1,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_NOT_YET_VALID,
               "future authorization must fail");
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", true, input.expiresAt,
+                input, "OpenCode-4DAD", true, input.expiresAt,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_EXPIRED,
               "authorization is expired at expiresAt");
   input.expiresAt = input.issuedAt;
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", true, input.issuedAt,
+                input, "OpenCode-4DAD", true, input.issuedAt,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_FIELD_INVALID,
               "empty or reversed authorization windows must fail");
   input = validAuthorization();
   input.expiresAt = input.issuedAt + OTA_AUTHORIZATION_MAX_LIFETIME_SECONDS + 1;
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", true, input.issuedAt,
+                input, "OpenCode-4DAD", true, input.issuedAt,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_FIELD_INVALID,
               "authorization lifetime above the bounded maximum must fail");
   input.expiresAt = input.issuedAt + 1;
   context = verifier();
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", true, input.issuedAt,
+                input, "OpenCode-4DAD", true, input.issuedAt,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_OK,
               "one-second authorization lifetime should pass at its issued boundary");
 }
@@ -196,12 +196,12 @@ static void testReplayAndFieldValidation() {
   OtaAuthorizationReplayState replay = otaAuthorizationReplayInitial();
   VerifyContext context = verifier();
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", true, 1720000060,
+                input, "OpenCode-4DAD", true, 1720000060,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_OK,
               "first authorization should pass");
   context = verifier();
   expect_true(otaAuthorizationVerifyAndRemember(
-                input, "Codex-4DAD", true, 1720000061,
+                input, "OpenCode-4DAD", true, 1720000061,
                 verifyCallback, &context, &replay) == OTA_AUTHORIZATION_REPLAY &&
               !context.called,
               "same nonce and generation must be rejected before crypto work");
@@ -224,7 +224,7 @@ static void testReplayAndFieldValidation() {
     OtaAuthorizationReplayState clean = otaAuthorizationReplayInitial();
     VerifyContext verify = verifier();
     expect_true(otaAuthorizationVerifyAndRemember(
-                  invalid, "Codex-4DAD", true, 1720000060,
+                  invalid, "OpenCode-4DAD", true, 1720000060,
                   verifyCallback, &verify, &clean) != OTA_AUTHORIZATION_OK,
                 "malformed or missing signed authorization field must fail");
   }
@@ -253,7 +253,7 @@ static void testVerifiedOfferCreatesSeparateBoundedWindow() {
   VerifyContext context = verifier(false);
   OtaAuthorizationResult result = OTA_AUTHORIZATION_OK;
   expect_true(!otaAuthorizationVerifyThenAccept(
-                input, "Codex-4DAD", true, 1720000060,
+                input, "OpenCode-4DAD", true, 1720000060,
                 verifyCallback, &context, &replay, "1.2.2", 1000,
                 true, false, false, false, true, 100, &offer, &result
               ) && result == OTA_AUTHORIZATION_SIGNATURE_INVALID &&
@@ -262,7 +262,7 @@ static void testVerifiedOfferCreatesSeparateBoundedWindow() {
 
   context = verifier();
   expect_true(otaAuthorizationVerifyThenAccept(
-                input, "Codex-4DAD", true, 1720000060,
+                input, "OpenCode-4DAD", true, 1720000060,
                 verifyCallback, &context, &replay, "1.2.2", 1000,
                 true, false, false, false, true, 100, &offer, &result
               ) && result == OTA_AUTHORIZATION_OK && offer.pending &&

@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
 
-**Goal:** Render standby and normal active Codex states through one pet + single-line time + date + usage-meter component.
+**Goal:** Render standby and normal active OpenCode states through one pet + single-line time + date + usage-meter component.
 
 **Architecture:** Introduce pure geometry/scheduling helpers, then refactor the existing charging clock and pet-only runtime to call a shared renderer with separate explicit cache instances. Functional overlays retain priority and meters remain the final layer.
 

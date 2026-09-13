@@ -17,7 +17,7 @@ The graph represents newly consumed input and output tokens over the most recent
 
 Each task is tracked independently by session ID. The host records only positive changes in a session's cumulative total. A newly discovered session establishes a baseline without emitting a historical spike. A lower counter, process restart, compaction reset, or disappearing session also causes a rebaseline rather than a negative or artificial positive sample.
 
-Managed sessions should use total token usage when the Codex event supplies it. If only separate input and output counters are available, the host sums them. Read-only Desktop sessions use the session log's total token count. Missing token data produces no token sample.
+Managed sessions should use total token usage when the OpenCode event supplies it. If only separate input and output counters are available, the host sums them. Read-only Desktop sessions use the session log's total token count. Missing token data produces no token sample.
 
 ### Sampling and transformation
 

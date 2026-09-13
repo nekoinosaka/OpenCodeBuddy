@@ -2,11 +2,11 @@
 
 ## Goal
 
-Make the normal Codex runtime screen a quiet pet-first surface: no status/transcript HUD in portrait or landscape, only the existing animated pet plus the two usage bars. Functional screens such as approval, pairing, clock, menus, settings, info, and reset keep their required text.
+Make the normal OpenCode runtime screen a quiet pet-first surface: no status/transcript HUD in portrait or landscape, only the existing animated pet plus the two usage bars. Functional screens such as approval, pairing, clock, menus, settings, info, and reset keep their required text.
 
 ## Scope
 
-The removed text is the normal runtime HUD: `Codex is working`, `No active Codex turn`, recent output lines, message summaries, and their scroll indicator. Approval command text and A/B actions are not status HUD and remain unchanged. The INFO pages may continue to expose diagnostic details intentionally selected by the user.
+The removed text is the normal runtime HUD: `OpenCode is working`, `No active OpenCode turn`, recent output lines, message summaries, and their scroll indicator. Approval command text and A/B actions are not status HUD and remain unchanged. The INFO pages may continue to expose diagnostic details intentionally selected by the user.
 
 The visible `transcript` setting is removed because the runtime HUD is no longer optional. The persisted `Settings.hud` field and NVS key remain readable/writable for backward compatibility with already provisioned devices, but runtime rendering no longer consults it.
 

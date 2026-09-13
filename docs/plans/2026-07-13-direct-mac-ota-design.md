@@ -16,7 +16,7 @@ BLE ownership and the persisted owner name are not authentication. The USB-boots
 For firmware versions that support Direct OTA, the Mac signs a canonical authorization envelope containing:
 
 - a domain-separated action and schema;
-- the target `Codex-XXXX` device name;
+- the target `OpenCode-XXXX` device name;
 - nonce and generation;
 - target version and size;
 - manifest and signature URLs;

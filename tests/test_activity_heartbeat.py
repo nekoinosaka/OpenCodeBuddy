@@ -1,4 +1,4 @@
-from codex_buddy.activity_heartbeat import ActivityHeartbeat
+from opencode_buddy.activity_heartbeat import ActivityHeartbeat
 
 
 def test_activity_heartbeat_projects_events_into_twenty_one_second_buckets():

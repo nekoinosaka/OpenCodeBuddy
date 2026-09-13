@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from codex_buddy import runtime
-from codex_buddy.ota_trust import (
+from opencode_buddy import runtime
+from opencode_buddy.ota_trust import (
     bootstrap_ota_trust,
     export_public_trust,
     generate_ota_trust,

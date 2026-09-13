@@ -63,9 +63,9 @@ int main() {
   expect_true(sharedClockFaceSelected(context, SHARED_CLOCK_IDLE),
               "normal idle standby should select the shared clock face");
   expect_true(sharedClockFaceSelected(context, SHARED_CLOCK_ACTIVE),
-              "normal active Codex work should select the same shared clock face");
+              "normal active OpenCode work should select the same shared clock face");
   expect_true(sharedClockFaceSelected(context, SHARED_CLOCK_WAITING),
-              "normal waiting Codex work should select the same shared clock face");
+              "normal waiting OpenCode work should select the same shared clock face");
 
   context.normalDisplay = false;
   expect_true(!sharedClockFaceSelected(context, SHARED_CLOCK_IDLE),

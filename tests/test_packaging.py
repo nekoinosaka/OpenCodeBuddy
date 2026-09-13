@@ -12,7 +12,7 @@ RESOURCE = "code-buddy-sticks3-app.bin"
 
 def test_wheel_and_sdist_contain_the_default_firmware_resource(tmp_path):
     project = Path(__file__).resolve().parents[1]
-    source_resource = project / "src" / "codex_buddy" / "firmware" / RESOURCE
+    source_resource = project / "src" / "opencode_buddy" / "firmware" / RESOURCE
     assert source_resource.is_file(), "release app image must be staged as package data"
 
     isolated = tmp_path / "project"
@@ -42,7 +42,7 @@ def test_wheel_and_sdist_contain_the_default_firmware_resource(tmp_path):
     sdist = next(output.glob("*.tar.gz"))
     with zipfile.ZipFile(wheel) as archive:
         wheel_members = [name for name in archive.namelist() if name.endswith(RESOURCE)]
-        assert wheel_members == [f"codex_buddy/firmware/{RESOURCE}"]
+        assert wheel_members == [f"opencode_buddy/firmware/{RESOURCE}"]
         assert archive.read(wheel_members[0]) == source_resource.read_bytes()
     with tarfile.open(sdist) as archive:
         sdist_members = [name for name in archive.getnames() if name.endswith(RESOURCE)]

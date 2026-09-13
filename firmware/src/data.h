@@ -50,7 +50,7 @@ struct TamaState {
 // Three modes, checked in priority order:
 //   demo   → auto-cycle fake scenarios every 8s, ignore live data
 //   live   → JSON arrived in the last 10s over USB or BT
-//   asleep → no data, all zeros, "No Codex connected"
+//   asleep → no data, all zeros, "No OpenCode connected"
 // ---------------------------------------------------------------------------
 
 static uint32_t _lastLiveMs = 0;
@@ -99,14 +99,14 @@ inline void dataRefreshRtcTrust(const ClockTimeFields& fields) {
 static OtaAuthorizationReplayState _otaAuthorizationReplay =
   otaAuthorizationReplayInitial();
 
-inline bool dataOtaExpectedDeviceName(char output[11]) {
+inline bool dataOtaExpectedDeviceName(char output[14]) {
   if (!output) return false;
   uint8_t mac[6] = {};
   if (esp_read_mac(mac, ESP_MAC_BT) != ESP_OK) {
     output[0] = 0;
     return false;
   }
-  snprintf(output, 11, "Codex-%02X%02X", mac[4], mac[5]);
+  snprintf(output, 14, "OpenCode-%02X%02X", mac[4], mac[5]);
   return true;
 }
 
@@ -188,7 +188,7 @@ static void _applyJson(const char* line, TamaState* out, bool trustedTransport) 
           !offer["expiresAt"].is<bool>();
         uint32_t issuedAt = issuedAtTyped ? offer["issuedAt"].as<uint32_t>() : 0;
         uint32_t expiresAt = expiresAtTyped ? offer["expiresAt"].as<uint32_t>() : 0;
-        char expectedDevice[11] = {};
+        char expectedDevice[14] = {};
         time_t systemEpoch = time(nullptr);
         bool epochInRange = systemEpoch >= 0 &&
           static_cast<uint64_t>(systemEpoch) <= UINT32_MAX;
@@ -430,6 +430,6 @@ inline void dataPoll(TamaState* out) {
     out->sessionsTotal=0; out->sessionsRunning=0; out->sessionsWaiting=0;
     out->recentlyCompleted=false; out->lastUpdated=now;
     out->hasActivity20=false; out->activity20=0; out->activity20ReceivedAt=now;
-    utf8CopyTruncate(out->msg, "No Codex connected");
+    utf8CopyTruncate(out->msg, "No OpenCode connected");
   }
 }

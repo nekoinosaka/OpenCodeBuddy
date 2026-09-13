@@ -1,6 +1,6 @@
 # Hardware Buddy BLE Protocol
 
-This is the wire protocol Codex Buddy speaks over Bluetooth LE.
+This is the wire protocol OpenCode Buddy speaks over Bluetooth LE.
 You don't need anything from this repository to implement it. Any device
 that can advertise the Nordic UART Service and parse newline-delimited JSON
 will work: Arduino, ESP32, nRF52, a Raspberry Pi with a BLE dongle.
@@ -11,7 +11,7 @@ The BLE bridge is used through `code-buddy` on the host Mac:
 
 1. Run `code-buddy` once to finish pairing, time sync, shell integration, and the launchd agent setup.
 2. Grant Bluetooth permission to the native helper on first use.
-3. Open a new shell and run `codex` normally.
+3. Open a new shell and run `opencode` normally.
 
 Once setup is complete the bridge auto-reconnects in the background.
 
@@ -25,7 +25,7 @@ Once setup is complete the bridge auto-reconnects in the background.
 | RX (desktop → device, write)  | `6e400002-b5a3-f393-e0a9-e50e24dcca9e` |
 | TX (device → desktop, notify) | `6e400003-b5a3-f393-e0a9-e50e24dcca9e` |
 
-Advertise a name starting with `Codex` over the Nordic UART Service so the
+Advertise a name starting with `OpenCode` over the Nordic UART Service so the
 device picker can filter to you. Appending a few bytes of your BT MAC keeps
 multiple devices distinguishable in the picker.
 

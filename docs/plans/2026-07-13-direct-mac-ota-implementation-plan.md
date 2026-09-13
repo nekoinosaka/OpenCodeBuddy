@@ -13,8 +13,8 @@
 ### Task 1: Host signed authorization envelope and legacy negotiation
 
 **Files:**
-- Modify: `src/codex_buddy/ota_protocol.py`
-- Modify: `src/codex_buddy/ota_coordination.py`
+- Modify: `src/opencode_buddy/ota_protocol.py`
+- Modify: `src/opencode_buddy/ota_coordination.py`
 - Test: `tests/test_ota_protocol.py`
 - Test: `tests/test_ota_coordination.py`
 
@@ -30,7 +30,7 @@ Expected: FAIL because signed authorization helpers and version negotiation do n
 
 **Step 3: Implement the minimum host behavior**
 
-Add `canonical_ota_authorization_bytes(...)` and `build_signed_ota_offer(...)`. Canonical fields are `action`, `device`, `expiresAt`, `generation`, `issuedAt`, `manifestUrl`, `nonce`, `signatureUrl`, `sizeBytes`, and `version`; `action` is `code-buddy-firmware-install-v1`. DER signatures are lowercase hex. Device names must match `Codex-[0-9A-F]{4}` and expiry must be short and forward-moving.
+Add `canonical_ota_authorization_bytes(...)` and `build_signed_ota_offer(...)`. Canonical fields are `action`, `device`, `expiresAt`, `generation`, `issuedAt`, `manifestUrl`, `nonce`, `signatureUrl`, `sizeBytes`, and `version`; `action` is `code-buddy-firmware-install-v1`. DER signatures are lowercase hex. Device names must match `OpenCode-[0-9A-F]{4}` and expiry must be short and forward-moving.
 
 In the coordinator, read the BLE transport device name, use the injected clock, and send the signed offer only when the probed current firmware is at least `0.1.6`; otherwise send the unchanged legacy offer.
 
@@ -41,7 +41,7 @@ Run the same pytest command and require zero failures.
 **Step 5: Commit**
 
 ```bash
-git add src/codex_buddy/ota_protocol.py src/codex_buddy/ota_coordination.py tests/test_ota_protocol.py tests/test_ota_coordination.py
+git add src/opencode_buddy/ota_protocol.py src/opencode_buddy/ota_coordination.py tests/test_ota_protocol.py tests/test_ota_coordination.py
 git commit -m "feat: sign direct OTA authorizations"
 ```
 
@@ -60,7 +60,7 @@ git commit -m "feat: sign direct OTA authorizations"
 
 **Step 1: Write failing native tests**
 
-Cover canonical reconstruction, DER-hex bounds/decoding, good signature callback, bad signature, wrong `Codex-XXXX`, expired/future envelope, invalid time ordering, replayed nonce/generation, malformed fields, and legacy offers requiring a physical receive window.
+Cover canonical reconstruction, DER-hex bounds/decoding, good signature callback, bad signature, wrong `OpenCode-XXXX`, expired/future envelope, invalid time ordering, replayed nonce/generation, malformed fields, and legacy offers requiring a physical receive window.
 
 **Step 2: Verify RED**
 
@@ -127,9 +127,9 @@ git commit -m "feat: add direct Mac OTA policy"
 ### Task 4: Harden local control-plane permissions
 
 **Files:**
-- Modify: `src/codex_buddy/setup_flow.py`
-- Modify: `src/codex_buddy/agent.py`
-- Modify: `src/codex_buddy/agent_runtime.py`
+- Modify: `src/opencode_buddy/setup_flow.py`
+- Modify: `src/opencode_buddy/agent.py`
+- Modify: `src/opencode_buddy/agent_runtime.py`
 - Test: `tests/test_setup_flow.py`
 - Test: `tests/test_agent.py`
 - Test: `tests/test_agent_runtime.py`
@@ -155,7 +155,7 @@ Run the focused tests and require zero failures. After reinstall/restart, verify
 **Step 5: Commit**
 
 ```bash
-git add src/codex_buddy/setup_flow.py src/codex_buddy/agent.py src/codex_buddy/agent_runtime.py tests/test_setup_flow.py tests/test_agent.py tests/test_agent_runtime.py
+git add src/opencode_buddy/setup_flow.py src/opencode_buddy/agent.py src/opencode_buddy/agent_runtime.py tests/test_setup_flow.py tests/test_agent.py tests/test_agent_runtime.py
 git commit -m "fix: restrict OTA control plane to local user"
 ```
 
@@ -163,9 +163,9 @@ git commit -m "fix: restrict OTA control plane to local user"
 
 **Files:**
 - Modify: `pyproject.toml`
-- Modify: `src/codex_buddy/__init__.py`
+- Modify: `src/opencode_buddy/__init__.py`
 - Modify: `firmware/src/firmware_version.h`
-- Modify: `src/codex_buddy/firmware/code-buddy-sticks3-app.bin`
+- Modify: `src/opencode_buddy/firmware/code-buddy-sticks3-app.bin`
 
 **Step 1: Run complete verification before release**
 

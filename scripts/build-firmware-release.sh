@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FIRMWARE_DIR="$ROOT/firmware"
 BUILD_DIR="$FIRMWARE_DIR/.pio/build/m5stack-sticks3"
 DIST_DIR="$ROOT/dist/firmware"
-PACKAGE_FIRMWARE_DIR="$ROOT/src/codex_buddy/firmware"
+PACKAGE_FIRMWARE_DIR="$ROOT/src/opencode_buddy/firmware"
 
 VERSION="${1:-$(
   python3 - <<'PY' "$ROOT/pyproject.toml"
@@ -111,7 +111,7 @@ cp "$BUILD_DIR/firmware.bin" "$DEFAULT_APP_OUTPUT"
 PYTHONPATH="$ROOT/src" "$PIO_PYTHON" - <<'PY' "$APP_OUTPUT" "$VERSION"
 import sys
 from pathlib import Path
-from codex_buddy.ota_release import inspect_esp32s3_application_image
+from opencode_buddy.ota_release import inspect_esp32s3_application_image
 
 image = inspect_esp32s3_application_image(Path(sys.argv[1]))
 if image.version != sys.argv[2]:

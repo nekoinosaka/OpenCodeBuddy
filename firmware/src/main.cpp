@@ -28,14 +28,14 @@ TFT_eSprite landscapeHeartbeatSprite = TFT_eSprite(&M5.Lcd);
 static bool landscapeClockPetSpriteReady = false;
 static bool landscapeHeartbeatSpriteReady = false;
 
-// Advertise as "Codex-XXXX" (last two BT MAC bytes) so multiple sticks
+// Advertise as "OpenCode-XXXX" (last two BT MAC bytes) so multiple sticks
 // in one room are distinguishable in the desktop picker. Name persists in
 // btName for the BLUETOOTH info page.
-static char btName[16] = "Codex";
+static char btName[16] = "OpenCode";
 static void startBt() {
   uint8_t mac[6] = {0};
   esp_read_mac(mac, ESP_MAC_BT);
-  snprintf(btName, sizeof(btName), "Codex-%02X%02X", mac[4], mac[5]);
+  snprintf(btName, sizeof(btName), "OpenCode-%02X%02X", mac[4], mac[5]);
   bleInit(btName);
 }
 
@@ -1578,7 +1578,7 @@ void drawInfo() {
   if (infoPage == 0) {
     _infoHeader(p, y, "ABOUT", infoPage);
     spr.setTextColor(p.textDim, p.bg);
-    ln("I watch your Codex");
+    ln("I watch your OpenCode");
     ln("desktop sessions.");
     y += 6;
     ln("I sleep when nothing's");
@@ -1610,7 +1610,7 @@ void drawInfo() {
     ln("    hold 6s = off");
 
   } else if (infoPage == 2) {
-    _infoHeader(p, y, "CODEX", infoPage);
+    _infoHeader(p, y, "OPENCODE", infoPage);
     spr.setTextColor(p.textDim, p.bg);
     ln("  sessions  %u", tama.sessionsTotal);
     ln("  running   %u", tama.sessionsRunning);
@@ -1695,7 +1695,7 @@ void drawInfo() {
       ln(" code-buddy");
       y += 4;
       ln("TO STAY LINKED");
-      ln(" run codex");
+      ln(" run opencode");
     }
 
   } else {
@@ -2598,7 +2598,7 @@ void loop() {
   bool clockSurfaceRenderable = clocking && clockOrientationState.resolved;
   bool landscapeClock = clockSurfaceRenderable && clockOrientationState.orientation != 0;
 
-  // Codex activity gets the same StickS3 auto-orientation policy as the
+  // OpenCode activity gets the same StickS3 auto-orientation policy as the
   // charging clock, but only on the normal home surface. The portrait sprite
   // remains unrotated; a landscape runtime uses the direct LCD path below.
   bool runtimeOrienting = screenOrientRuntimeEligible(

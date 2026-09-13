@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Resize the StickS3 Codex usage display into two visible six-pixel bars with exact two-pixel outer and inter-bar spacing.
+**Goal:** Resize the StickS3 OpenCode usage display into two visible six-pixel bars with exact two-pixel outer and inter-bar spacing.
 
 **Architecture:** Keep the existing host payload and firmware render-state cache unchanged. Update only the pure usage-meter geometry contract so every portrait and direct-LCD landscape surface receives the new rectangles and reserves/clears the complete sixteen-pixel footprint.
 

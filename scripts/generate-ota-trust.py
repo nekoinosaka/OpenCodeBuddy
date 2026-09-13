@@ -8,7 +8,7 @@ from pathlib import Path
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 
-from codex_buddy.ota_trust import bootstrap_ota_trust, export_public_trust
+from opencode_buddy.ota_trust import bootstrap_ota_trust, export_public_trust
 
 
 def main() -> int:

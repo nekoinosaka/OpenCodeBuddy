@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from codex_buddy import ble_transport
-from codex_buddy.ble_transport import (
+from opencode_buddy import ble_transport
+from opencode_buddy.ble_transport import (
     BleBuddyTransport,
     DiscoveredBuddy,
     NativeBleHelperSession,
@@ -85,7 +85,7 @@ def test_ble_transport_native_helper_connect_sends_owner_and_time_sync():
 
     def factory(*, device_id: str, device_name: str, on_permission):
         assert device_id == "device-1"
-        assert device_name == "Codex-1234"
+        assert device_name == "OpenCode-1234"
         fake.on_permission = on_permission
         return fake
 
@@ -94,7 +94,7 @@ def test_ble_transport_native_helper_connect_sends_owner_and_time_sync():
     try:
         transport = BleBuddyTransport(
             "device-1",
-            device_name="Codex-1234",
+            device_name="OpenCode-1234",
             use_native_helper=True,
             native_session_factory=factory,
         )
@@ -139,7 +139,7 @@ def test_native_helper_open_command_launches_without_focus(tmp_path):
         app_path=app_path,
         session_dir=session_dir,
         device_id="dev-1",
-        device_name="Codex-1234",
+        device_name="OpenCode-1234",
     )
 
     assert command[:4] == ["open", "-g", "-j", "-n"]
@@ -151,7 +151,7 @@ def test_native_helper_open_command_launches_without_focus(tmp_path):
         "--device-id",
         "dev-1",
         "--device-name",
-        "Codex-1234",
+        "OpenCode-1234",
     ]
 
 
@@ -164,13 +164,13 @@ def test_ble_transport_native_helper_forwards_permission_events():
 
     def factory(*, device_id: str, device_name: str, on_permission):
         assert device_id == "device-1"
-        assert device_name == "Codex-1234"
+        assert device_name == "OpenCode-1234"
         fake.on_permission = on_permission
         return fake
 
     transport = BleBuddyTransport(
         "device-1",
-        device_name="Codex-1234",
+        device_name="OpenCode-1234",
         on_permission=on_permission,
         use_native_helper=True,
         native_session_factory=factory,
@@ -185,7 +185,7 @@ def test_ble_transport_native_helper_forwards_permission_events():
 def test_native_helper_session_queues_bounded_json_notifications():
     async def exercise():
         session = NativeBleHelperSession(
-            device_id="dev-1", device_name="Codex-1234", on_permission=None
+            device_id="dev-1", device_name="OpenCode-1234", on_permission=None
         )
         await session._handle_event(
             {
@@ -222,7 +222,7 @@ def test_ble_transport_sends_and_receives_application_json_without_regressing_pe
     async def exercise():
         transport = BleBuddyTransport(
             "device-1",
-            device_name="Codex-1234",
+            device_name="OpenCode-1234",
             on_permission=on_permission,
             use_native_helper=True,
             native_session_factory=factory,
@@ -248,17 +248,17 @@ def test_ble_transport_sends_and_receives_application_json_without_regressing_pe
 
 
 def test_native_discovery_matches_name_or_service_uuid():
-    assert _matches_buddy_discovery({"name": "Codex-4DAD", "service_uuids": []}) is True
+    assert _matches_buddy_discovery({"name": "OpenCode-4DAD", "service_uuids": []}) is True
     assert _matches_buddy_discovery({"name": "Legacy-4DAD", "service_uuids": []}) is False
     assert _matches_buddy_discovery({"name": "", "service_uuids": ["6E400001-B5A3-F393-E0A9-E50E24DCCA9E"]}) is True
     assert _matches_buddy_discovery({"name": "Other", "service_uuids": ["1234"]}) is False
 
 
 def test_discover_uses_native_helper_when_backend_is_native(monkeypatch):
-    expected = [DiscoveredBuddy(device_id="dev-1", name="Codex-1234")]
+    expected = [DiscoveredBuddy(device_id="dev-1", name="OpenCode-1234")]
 
-    monkeypatch.setenv("CODEX_BUDDY_BLE_BACKEND", "native")
-    monkeypatch.setattr("codex_buddy.ble_transport._discover_with_native_helper", lambda timeout: expected)
+    monkeypatch.setenv("CODE_BUDDY_BLE_BACKEND", "native")
+    monkeypatch.setattr("opencode_buddy.ble_transport._discover_with_native_helper", lambda timeout: expected)
 
     matches = asyncio.run(BleBuddyTransport.discover(timeout=2.5))
 
@@ -272,7 +272,7 @@ def test_native_helper_app_path_prefers_runtime_install(monkeypatch, tmp_path):
     executable.write_text("#!/bin/sh\n", encoding="utf-8")
 
     ble_transport._native_helper_app_path.cache_clear()
-    monkeypatch.delenv("CODEX_BUDDY_BLE_HELPER_APP", raising=False)
+    monkeypatch.delenv("CODE_BUDDY_BLE_HELPER_APP", raising=False)
     monkeypatch.setattr(ble_transport, "runtime_helper_app_path", lambda: Path(app_path))
 
     try:
@@ -287,7 +287,7 @@ def test_non_native_discover_requires_bleak(monkeypatch):
         "_require_bleak",
         lambda: (_ for _ in ()).throw(RuntimeError("bleak is required")),
     )
-    monkeypatch.setenv("CODEX_BUDDY_BLE_BACKEND", "bleak")
+    monkeypatch.setenv("CODE_BUDDY_BLE_BACKEND", "bleak")
 
     with pytest.raises(RuntimeError, match="bleak is required"):
         asyncio.run(BleBuddyTransport.discover(timeout=0.1))
@@ -352,7 +352,7 @@ def test_native_helper_session_cleanup_terminates_current_session_dir(monkeypatc
         lambda **kwargs: calls.append(kwargs),
     )
 
-    session = NativeBleHelperSession(device_id="dev-1", device_name="Codex-1234", on_permission=None)
+    session = NativeBleHelperSession(device_id="dev-1", device_name="OpenCode-1234", on_permission=None)
     session._session_dir = tmp_path / "codebuddy-ble-123"
     session._session_dir.mkdir()
     session_dir = session._session_dir
@@ -375,7 +375,7 @@ def test_native_helper_session_start_helper_cleans_stale_helpers_for_device(monk
     monkeypatch.setattr(ble_transport, "_terminate_native_helper_processes", fake_terminate)
     monkeypatch.setattr(ble_transport.asyncio, "to_thread", fake_to_thread)
 
-    session = NativeBleHelperSession(device_id="dev-1", device_name="Codex-1234", on_permission=None)
+    session = NativeBleHelperSession(device_id="dev-1", device_name="OpenCode-1234", on_permission=None)
     monkeypatch.setattr(session, "_launch_helper_process", lambda: None)
 
     async def run() -> None:
@@ -394,7 +394,7 @@ def test_native_helper_session_start_helper_cleans_stale_helpers_for_device(monk
 def test_native_helper_connect_is_singleflight_on_same_event_loop(monkeypatch):
     async def exercise():
         session = NativeBleHelperSession(
-            device_id="dev-1", device_name="Codex-1234", on_permission=None
+            device_id="dev-1", device_name="OpenCode-1234", on_permission=None
         )
         starts = 0
 

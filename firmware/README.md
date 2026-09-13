@@ -1,7 +1,7 @@
 # Code Buddy Firmware
 
 This firmware targets the M5Stack StickS3 and turns it into a Code Buddy display
-and approval device. Managed Codex CLI sessions support approvals, while Codex
+and approval device. Managed OpenCode CLI sessions support approvals, while OpenCode
 Desktop contributes read-only task status and completion cues through the host.
 
 > Building your own hardware client instead? See [REFERENCE.md](REFERENCE.md) for the BLE protocol and JSON payloads.
@@ -36,7 +36,7 @@ indicator, a smooth continuous trace of real input-plus-output token consumption
 progress, and `RUN`, `ASK`, and `NEW` task counts. The full-width bottom 29-by-3
 meter uses 6 px dots with 2 px gaps, aligned to the 4 px footer baseline and
 left edge, to show remaining
-Codex allowance. While a task runs, its remaining dots animate with a diagonal
+OpenCode allowance. While a task runs, its remaining dots animate with a diagonal
 wave across RUN-green, blue, and lavender rows. A short chime plays once per
 completed turn when **Settings > sound** is enabled.
 When a fresh allowance read is temporarily unavailable, the last valid meter

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from codex_buddy.ota_trust import generate_ota_trust
+from opencode_buddy.ota_trust import generate_ota_trust
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

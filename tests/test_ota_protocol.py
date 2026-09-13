@@ -4,15 +4,15 @@ import json
 
 import pytest
 
-from codex_buddy.ota_protocol import (
+from opencode_buddy.ota_protocol import (
     OtaProtocolError,
     build_ota_offer,
     build_signed_ota_offer,
     canonical_ota_authorization_bytes,
     parse_ota_status,
 )
-from codex_buddy.ota_release import verify_manifest_signature
-from codex_buddy.ota_trust import generate_ota_trust
+from opencode_buddy.ota_release import verify_manifest_signature
+from opencode_buddy.ota_trust import generate_ota_trust
 
 
 _MANIFEST_URL = "https://192.168.1.2:443/token-token-token-token-1234/manifest.json"
@@ -43,7 +43,7 @@ def test_offer_is_bounded_and_contains_only_device_hint_fields():
 
 def test_authorization_bytes_are_canonical_and_domain_separated():
     arguments = dict(
-        device="Codex-4DAD",
+        device="OpenCode-4DAD",
         issued_at=1_700_000_000,
         expires_at=1_700_000_120,
         nonce="n" * 24,
@@ -59,7 +59,7 @@ def test_authorization_bytes_are_canonical_and_domain_separated():
 
     assert first == second
     assert first == (
-        b'{"action":"code-buddy-firmware-install-v1","device":"Codex-4DAD",'
+        b'{"action":"code-buddy-firmware-install-v1","device":"OpenCode-4DAD",'
         b'"expiresAt":1700000120,"generation":7,"issuedAt":1700000000,'
         b'"manifestUrl":"https://192.168.1.2:443/token-token-token-token-1234/manifest.json",'
         b'"nonce":"nnnnnnnnnnnnnnnnnnnnnnnn",'
@@ -74,7 +74,7 @@ def test_authorization_bytes_are_canonical_and_domain_separated():
 def test_signed_offer_verifies_and_has_strict_modern_shape(tmp_path):
     trust = generate_ota_trust(tmp_path / "trust")
     offer = build_signed_ota_offer(
-        device="Codex-4DAD",
+        device="OpenCode-4DAD",
         issued_at=1_700_000_000,
         expires_at=1_700_000_120,
         nonce="n" * 24,
@@ -110,7 +110,7 @@ def test_signed_offer_verifies_and_has_strict_modern_shape(tmp_path):
     )
 
 
-@pytest.mark.parametrize("device", ["Codex-4dad", "Codex-12345", "Other-4DAD", ""])
+@pytest.mark.parametrize("device", ["OpenCode-4dad", "OpenCode-12345", "Other-4DAD", ""])
 def test_signed_offer_rejects_noncanonical_device_names(tmp_path, device):
     trust = generate_ota_trust(tmp_path / device.replace("/", "_") or "empty")
     with pytest.raises(OtaProtocolError, match="device"):
@@ -145,7 +145,7 @@ def test_signed_offer_rejects_invalid_or_overlong_time_windows(
     trust = generate_ota_trust(tmp_path / f"trust-{issued_at}-{expires_at}")
     with pytest.raises(OtaProtocolError, match="time"):
         build_signed_ota_offer(
-            device="Codex-4DAD",
+            device="OpenCode-4DAD",
             issued_at=issued_at,
             expires_at=expires_at,
             nonce="n" * 24,

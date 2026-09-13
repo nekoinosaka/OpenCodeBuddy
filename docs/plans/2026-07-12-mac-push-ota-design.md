@@ -35,8 +35,8 @@ TLS authenticates the local Mac endpoint. The detached manifest signature authen
 
 ## Transport and privacy boundaries
 
-- BLE remains the Codex snapshot/approval control plane and carries only OTA coordination/status.
-- Wi-Fi carries only signed release metadata and firmware bytes. No Codex account data, transcript, approval, or OpenAI credential is exposed over HTTP(S).
+- BLE remains the OpenCode snapshot/approval control plane and carries only OTA coordination/status.
+- Wi-Fi carries only signed release metadata and firmware bytes. No OpenCode account data, transcript, approval, or OpenAI credential is exposed over HTTP(S).
 - The HTTPS server is one-shot, token-scoped, bounded to the selected artifact, and shuts down after success, failure, or timeout. It does not expose a directory listing or arbitrary file path.
 - OTA is refused while an approval prompt is active, while the device lacks external power and has less than 50% battery, or when an image does not fit the inactive slot.
 - Host BLE time sync must also call `settimeofday()` with UTC so TLS certificate validation has trustworthy system time. SNTP is a fallback only when the BLE time is absent or stale.

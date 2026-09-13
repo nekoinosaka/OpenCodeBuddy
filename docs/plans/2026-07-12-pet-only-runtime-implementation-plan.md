@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Remove normal Codex status text globally and center the largest crisp existing pet animation above the separated usage bars.
+**Goal:** Remove normal OpenCode status text globally and center the largest crisp existing pet animation above the separated usage bars.
 
 **Architecture:** A pure runtime-layout helper defines when text overlays are allowed and returns portrait/landscape pet viewport geometry. The existing ASCII/GIF renderers accept explicit runtime placement, while approval and non-runtime screens retain their current layouts. Prompt exits invalidate the entire runtime surface so removed HUD/approval pixels cannot survive.
 
@@ -129,7 +129,7 @@ Expected: every host test and the StickS3 build exit `0`.
 
 ```bash
 git add firmware/src firmware/tests
-git commit -m "feat: show pet-only Codex runtime"
+git commit -m "feat: show pet-only OpenCode runtime"
 ```
 
 Do not flash the device, reinstall the host service, or push the branch. Wait for the user's remaining changes.

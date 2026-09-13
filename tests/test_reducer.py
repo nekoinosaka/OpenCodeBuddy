@@ -1,9 +1,8 @@
 from dataclasses import replace
 import json
 
-from codex_buddy.events import ApprovalRequest, AgentOutput, TokenUsage, TurnState
-from codex_buddy.reducer import BuddySnapshot, BuddyStateReducer
-from codex_buddy.usage_limits import UsageDisplay
+from opencode_buddy.events import ApprovalRequest, AgentOutput, TokenUsage, TurnState
+from opencode_buddy.reducer import BuddySnapshot, BuddyStateReducer
 
 
 def test_turn_lifecycle_and_entries_are_projected_into_snapshot():
@@ -174,10 +173,7 @@ def test_ble_payload_uses_utf8_json_and_stays_within_device_budget_for_cjk_entri
         )
     )
 
-    snapshot = replace(
-        reducer.snapshot(),
-        usage=UsageDisplay(five_hour_remaining=72, seven_day_remaining=91),
-    )
+    snapshot = reducer.snapshot()
     payload = snapshot.as_ble_payload()
 
     utf8_line = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -187,77 +183,29 @@ def test_ble_payload_uses_utf8_json_and_stays_within_device_budget_for_cjk_entri
     assert len(utf8_line) + 1 <= 900
     assert len(escaped_line) + 1 > 1024
     assert payload["entries"]
-    assert payload["usage"] == {"five_hour_remaining": 72, "seven_day_remaining": 91}
 
 
-def test_snapshot_usage_is_optional_and_keeps_the_compact_ble_shape():
-    legacy_snapshot = BuddySnapshot(
+def test_snapshot_keeps_the_compact_ble_shape():
+    snapshot = BuddySnapshot(
         total=1,
         running=1,
         waiting=0,
-        msg="Codex is working",
+        msg="OpenCode is working",
         entries=["Checking the change"],
         tokens=120,
         tokens_today=45,
         prompt=None,
     )
 
-    assert legacy_snapshot.as_ble_payload() == {
+    assert snapshot.as_ble_payload() == {
         "total": 1,
         "running": 1,
         "waiting": 0,
-        "msg": "Codex is working",
+        "msg": "OpenCode is working",
         "entries": ["Checking the change"],
         "tokens": 120,
         "tokens_today": 45,
     }
 
-    snapshot_with_unread = replace(legacy_snapshot, unread=3)
-    assert snapshot_with_unread.as_ble_payload()["unread"] == 3
-    assert "unread" not in legacy_snapshot.as_ble_payload()
-
-    snapshot_with_completion = replace(legacy_snapshot, completion_seq=7)
+    snapshot_with_completion = replace(snapshot, completion_seq=7)
     assert snapshot_with_completion.as_ble_payload()["completion_seq"] == 7
-
-    snapshot_with_usage = BuddySnapshot(
-        total=1,
-        running=1,
-        waiting=0,
-        msg="Codex is working",
-        entries=["Checking the change"],
-        tokens=120,
-        tokens_today=45,
-        prompt=None,
-        usage=UsageDisplay(five_hour_remaining=72, seven_day_remaining=91),
-    )
-
-    assert snapshot_with_usage.as_ble_payload()["usage"] == {
-        "five_hour_remaining": 72,
-        "seven_day_remaining": 91,
-    }
-
-    snapshot_with_week_only = replace(
-        snapshot_with_usage,
-        usage=UsageDisplay(seven_day_remaining=99),
-    )
-
-    assert snapshot_with_week_only.as_ble_payload()["usage"] == {
-        "seven_day_remaining": 99,
-    }
-
-
-def test_snapshot_omits_usage_when_a_fresh_limit_is_unavailable():
-    expired_snapshot = BuddySnapshot(
-        total=1,
-        running=1,
-        waiting=0,
-        msg="Codex is working",
-        entries=["Checking the change"],
-        tokens=120,
-        tokens_today=45,
-        prompt=None,
-        usage=None,
-        usage_is_known=True,
-    )
-
-    assert "usage" not in expired_snapshot.as_ble_payload()

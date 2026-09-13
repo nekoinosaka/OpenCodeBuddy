@@ -13,11 +13,11 @@
 ### Task 1: Add protected OTA trust and signed release tooling
 
 **Files:**
-- Create: `src/codex_buddy/ota_trust.py`
-- Create: `src/codex_buddy/ota_release.py`
+- Create: `src/opencode_buddy/ota_trust.py`
+- Create: `src/opencode_buddy/ota_release.py`
 - Create: `scripts/generate-ota-trust.py`
 - Create: `scripts/build-ota-release.py`
-- Modify: `src/codex_buddy/runtime.py`
+- Modify: `src/opencode_buddy/runtime.py`
 - Modify: `.gitignore`
 - Test: `tests/test_ota_trust.py`
 - Test: `tests/test_ota_release.py`
@@ -32,9 +32,9 @@
 ### Task 2: Add the one-shot local HTTPS artifact server
 
 **Files:**
-- Create: `src/codex_buddy/ota_server.py`
-- Modify: `src/codex_buddy/agent.py`
-- Modify: `src/codex_buddy/runtime.py`
+- Create: `src/opencode_buddy/ota_server.py`
+- Modify: `src/opencode_buddy/agent.py`
+- Modify: `src/opencode_buddy/runtime.py`
 - Test: `tests/test_ota_server.py`
 - Test: `tests/test_agent.py`
 
@@ -122,11 +122,11 @@
 ### Task 7: Add the Mac command and end-to-end coordination
 
 **Files:**
-- Modify: `src/codex_buddy/cli.py`
-- Modify: `src/codex_buddy/agent.py`
-- Modify: `src/codex_buddy/ble_transport.py`
-- Modify: `src/codex_buddy/native_ble_helper/CodeBuddyBLEHelper.swift`
-- Modify: `src/codex_buddy/setup_flow.py`
+- Modify: `src/opencode_buddy/cli.py`
+- Modify: `src/opencode_buddy/agent.py`
+- Modify: `src/opencode_buddy/ble_transport.py`
+- Modify: `src/opencode_buddy/native_ble_helper/CodeBuddyBLEHelper.swift`
+- Modify: `src/opencode_buddy/setup_flow.py`
 - Modify: `scripts/build-firmware-release.sh`
 - Modify: `README.md`
 - Modify: `firmware/REFERENCE.md`

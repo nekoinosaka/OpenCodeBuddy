@@ -21,7 +21,7 @@
 ### Task 1: Host token window
 
 **Files:**
-- Create: `src/codex_buddy/token_heartbeat.py`
+- Create: `src/opencode_buddy/token_heartbeat.py`
 - Create: `tests/test_token_heartbeat.py`
 
 **Interfaces:**
@@ -36,9 +36,9 @@
 ### Task 2: Agent integration and total token semantics
 
 **Files:**
-- Modify: `src/codex_buddy/agent.py`
-- Modify: `src/codex_buddy/reducer.py`
-- Modify: `src/codex_buddy/proxy.py`
+- Modify: `src/opencode_buddy/agent.py`
+- Modify: `src/opencode_buddy/reducer.py`
+- Modify: `src/opencode_buddy/proxy.py`
 - Modify: `tests/test_agent.py`
 - Modify: `tests/test_reducer.py`
 - Modify: `tests/test_bridge.py`

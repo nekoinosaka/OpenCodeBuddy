@@ -2,7 +2,7 @@ import plistlib
 from types import SimpleNamespace
 from pathlib import Path
 
-from codex_buddy import launchd
+from opencode_buddy import launchd
 
 
 def test_launchd_label_is_stable():
@@ -33,7 +33,7 @@ def test_render_launchd_plist_contains_expected_values(tmp_path):
     assert payload["ProgramArguments"] == [
         "/Users/tester/Documents/CodeBuddy/.venv/bin/python",
         "-m",
-        "codex_buddy",
+        "opencode_buddy",
         "--state-path",
         str(state_path),
         "agent",

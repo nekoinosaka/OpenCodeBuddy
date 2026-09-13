@@ -2,21 +2,21 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add a display-only `RUN` / `ASK` / `NEW` dashboard to the StickS3 landscape clock, backed by local Codex task state and the Codex Desktop unread collection, while moving the clock down four pixels and replacing the landscape footer with one 20 px usage bar.
+**Goal:** Add a display-only `RUN` / `ASK` / `NEW` dashboard to the StickS3 landscape clock, backed by local OpenCode task state and the OpenCode Desktop unread collection, while moving the clock down four pixels and replacing the landscape footer with one 20 px usage bar.
 
-**Architecture:** The host keeps the current catalog as the source of `RUN` and `ASK`, and adds a defensive read-only watcher for Codex Desktop's local unread-thread state. The optional unread count travels through the existing snapshot/BLE contract; firmware validates and stores it, then a pure layout/render layer controls status formatting, colors, invalidation, and the landscape-only usage-meter geometry. Existing portrait, approval, OTA, menu, settings, passkey, and non-clock meter paths remain unchanged.
+**Architecture:** The host keeps the current catalog as the source of `RUN` and `ASK`, and adds a defensive read-only watcher for OpenCode Desktop's local unread-thread state. The optional unread count travels through the existing snapshot/BLE contract; firmware validates and stores it, then a pure layout/render layer controls status formatting, colors, invalidation, and the landscape-only usage-meter geometry. Existing portrait, approval, OTA, menu, settings, passkey, and non-clock meter paths remain unchanged.
 
-**Tech Stack:** Python 3.13, pytest, asyncio, JSON, Codex app-server/session catalog, BLE JSON, C++17, ArduinoJson, M5Unified/LovyanGFX, PlatformIO
+**Tech Stack:** Python 3.13, pytest, asyncio, JSON, OpenCode app-server/session catalog, BLE JSON, C++17, ArduinoJson, M5Unified/LovyanGFX, PlatformIO
 
 ---
 
 Use `@superpowers:test-driven-development` for every task below. Before claiming completion, use `@superpowers:verification-before-completion` and keep host tests, native firmware tests, firmware build, install, and on-device observation as separate evidence.
 
-### Task 1: Read Codex Desktop local unread state without mutating it
+### Task 1: Read OpenCode Desktop local unread state without mutating it
 
 **Files:**
-- Create: `src/codex_buddy/codex_client_state_watcher.py`
-- Create: `tests/test_codex_client_state_watcher.py`
+- Create: `src/opencode_buddy/opencode_client_state_watcher.py`
+- Create: `tests/test_opencode_client_state_watcher.py`
 
 **Step 1: Write the failing watcher tests**
 
@@ -32,33 +32,33 @@ def write_state(path: Path, local: object) -> None:
 
 
 def test_counts_unique_local_unread_thread_ids(tmp_path: Path) -> None:
-    path = tmp_path / ".codex-global-state.json"
+    path = tmp_path / ".opencode-global-state.json"
     write_state(path, ["thread-a", "thread-b"])
-    watcher = CodexClientStateWatcher(path)
+    watcher = OpenCodeClientStateWatcher(path)
     assert watcher.poll() == 2
 
 
 def test_missing_or_malformed_state_is_unknown_before_first_valid_read(tmp_path: Path) -> None:
-    path = tmp_path / ".codex-global-state.json"
-    watcher = CodexClientStateWatcher(path)
+    path = tmp_path / ".opencode-global-state.json"
+    watcher = OpenCodeClientStateWatcher(path)
     assert watcher.poll() is None
     path.write_text("{")
     assert watcher.poll() is None
 
 
 def test_transient_failure_retains_last_trusted_count(tmp_path: Path) -> None:
-    path = tmp_path / ".codex-global-state.json"
+    path = tmp_path / ".opencode-global-state.json"
     write_state(path, ["thread-a"])
-    watcher = CodexClientStateWatcher(path)
+    watcher = OpenCodeClientStateWatcher(path)
     assert watcher.poll() == 1
     path.write_text("{")
     assert watcher.poll() == 1
 
 
 def test_rejects_non_string_and_duplicate_ids_without_replacing_trusted_value(tmp_path: Path) -> None:
-    path = tmp_path / ".codex-global-state.json"
+    path = tmp_path / ".opencode-global-state.json"
     write_state(path, ["thread-a"])
-    watcher = CodexClientStateWatcher(path)
+    watcher = OpenCodeClientStateWatcher(path)
     assert watcher.poll() == 1
     write_state(path, ["thread-a", "thread-a"])
     assert watcher.poll() == 1
@@ -73,17 +73,17 @@ Also assert the watcher follows only `...unread-thread-ids-by-host-v1.local`; re
 Run:
 
 ```bash
-PYTHONPATH=src .venv/bin/pytest -q tests/test_codex_client_state_watcher.py
+PYTHONPATH=src .venv/bin/pytest -q tests/test_opencode_client_state_watcher.py
 ```
 
-Expected: FAIL during import because `codex_client_state_watcher.py` does not exist.
+Expected: FAIL during import because `opencode_client_state_watcher.py` does not exist.
 
 **Step 3: Implement the minimal defensive watcher**
 
 Implement a small synchronous class suitable for the agent's existing two-second polling loop:
 
 ```python
-class CodexClientStateWatcher:
+class OpenCodeClientStateWatcher:
     def __init__(self, state_path: Path) -> None:
         self.state_path = state_path
         self._last_trusted: Optional[int] = None
@@ -113,7 +113,7 @@ Keep the class read-only. Avoid logging on every poll; let the agent log only bo
 Run:
 
 ```bash
-PYTHONPATH=src .venv/bin/pytest -q tests/test_codex_client_state_watcher.py
+PYTHONPATH=src .venv/bin/pytest -q tests/test_opencode_client_state_watcher.py
 ```
 
 Expected: all watcher tests PASS.
@@ -121,15 +121,15 @@ Expected: all watcher tests PASS.
 **Step 5: Commit**
 
 ```bash
-git add src/codex_buddy/codex_client_state_watcher.py tests/test_codex_client_state_watcher.py
-git commit -m "feat: read Codex client unread state"
+git add src/opencode_buddy/opencode_client_state_watcher.py tests/test_opencode_client_state_watcher.py
+git commit -m "feat: read OpenCode client unread state"
 ```
 
 ### Task 2: Publish optional unread count through the host snapshot
 
 **Files:**
-- Modify: `src/codex_buddy/reducer.py:27-65`
-- Modify: `src/codex_buddy/agent.py:185-225,546-553,698-705`
+- Modify: `src/opencode_buddy/reducer.py:27-65`
+- Modify: `src/opencode_buddy/agent.py:185-225,546-553,698-705`
 - Modify: `tests/test_reducer.py`
 - Modify: `tests/test_agent.py`
 
@@ -184,7 +184,7 @@ if self.unread is not None:
 In `BuddyAgent.__init__`, add an optional `client_state_watcher` injection and default it to:
 
 ```python
-CodexClientStateWatcher(Path.home() / ".codex" / ".codex-global-state.json")
+OpenCodeClientStateWatcher(Path.home() / ".opencode" / ".opencode-global-state.json")
 ```
 
 Initialize `self._unread: Optional[int] = None`. Poll the client watcher from the existing `_readonly_loop` regardless of whether session-log discovery is enabled, update `self._unread`, and publish once after both local session and unread state have been sampled. Extend `_snapshot()` with `unread=self._unread`.
@@ -196,7 +196,7 @@ Do not derive `NEW` from completed tasks, do not include remote hosts, and do no
 Run:
 
 ```bash
-PYTHONPATH=src .venv/bin/pytest -q tests/test_codex_client_state_watcher.py tests/test_reducer.py tests/test_agent.py
+PYTHONPATH=src .venv/bin/pytest -q tests/test_opencode_client_state_watcher.py tests/test_reducer.py tests/test_agent.py
 UV_PROJECT_ENVIRONMENT=/tmp/codebuddy-py313-test uv run --python 3.13 --extra dev pytest -q
 ```
 
@@ -205,7 +205,7 @@ Expected: focused tests PASS; full Python 3.13 suite PASS.
 **Step 5: Commit**
 
 ```bash
-git add src/codex_buddy/reducer.py src/codex_buddy/agent.py tests/test_reducer.py tests/test_agent.py
+git add src/opencode_buddy/reducer.py src/opencode_buddy/agent.py tests/test_reducer.py tests/test_agent.py
 git commit -m "feat: publish unread task count"
 ```
 
@@ -490,7 +490,7 @@ Expected: full host suite PASS, every supported native logic test PASS, and firm
 Read the local array length without modifying the file:
 
 ```bash
-jq '."electron-persisted-atom-state"."unread-thread-ids-by-host-v1".local | length' ~/.codex/.codex-global-state.json
+jq '."electron-persisted-atom-state"."unread-thread-ids-by-host-v1".local | length' ~/.opencode/.opencode-global-state.json
 ```
 
 Start/repair Code Buddy using the worktree build, then confirm the persisted/published snapshot includes the same `unread` count. Verify `RUN` and `ASK` still match local catalog state.
@@ -512,7 +512,7 @@ On the physical 240 x 135 screen, verify:
 
 - Top region is an even 120/120 split; pet animation never erases status text.
 - `RUN`, `ASK`, and `NEW` are centered and legible; positive colors are green, amber, and cyan respectively; zeros are dim.
-- Opening an unread local task in Codex Desktop reduces `NEW` after the next host poll/BLE publish.
+- Opening an unread local task in OpenCode Desktop reduces `NEW` after the next host poll/BLE publish.
 - Device buttons do not alter `NEW`.
 - Time/date are exactly four pixels lower and do not overlap the footer.
 - Exactly one bar appears at x 2, y 113, width 236, height 20.

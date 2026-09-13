@@ -5,7 +5,7 @@ import importlib.util
 import struct
 from pathlib import Path
 
-from codex_buddy.ota_release import inspect_esp32s3_application_image
+from opencode_buddy.ota_release import inspect_esp32s3_application_image
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "firmware" / "scripts" / "inject-firmware-version.py"

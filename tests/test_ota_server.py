@@ -10,16 +10,16 @@ from pathlib import Path
 
 import pytest
 
-import codex_buddy.ota_server as ota_server_module
-from codex_buddy.ota_release import OtaRelease, canonical_manifest_bytes
-from codex_buddy.ota_server import (
+import opencode_buddy.ota_server as ota_server_module
+from opencode_buddy.ota_release import OtaRelease, canonical_manifest_bytes
+from opencode_buddy.ota_server import (
     OtaEndpointReservation,
     OtaHttpsServer,
     OtaRequestRouter,
     create_ephemeral_tls_material,
     select_private_lan_ipv4,
 )
-from codex_buddy.ota_trust import generate_ota_trust
+from opencode_buddy.ota_trust import generate_ota_trust
 
 
 TOKEN = "test-token-with-enough-entropy"

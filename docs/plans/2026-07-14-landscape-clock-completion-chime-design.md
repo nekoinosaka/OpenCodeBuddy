@@ -2,12 +2,12 @@
 
 ## Goal
 
-Make the StickS3 landscape clock materially easier to read while preserving the bottom usage meter, and play one compact sound after each successfully completed Codex turn.
+Make the StickS3 landscape clock materially easier to read while preserving the bottom usage meter, and play one compact sound after each successfully completed OpenCode turn.
 
 ## Scope
 
 - Change only the landscape shared clock face. Portrait geometry stays unchanged.
-- Treat a task as one complete Codex turn, not an individual tool, command, or item.
+- Treat a task as one complete OpenCode turn, not an individual tool, command, or item.
 - Play the completion sound for successful terminal turns. Interrupted or failed turns do not use the success chime.
 - Preserve functional surfaces such as approval, menu, settings, passkey, and OTA progress.
 
@@ -31,7 +31,7 @@ All rectangles are non-overlapping so pet animation refreshes cannot erase time,
 
 The host sends a monotonic `completion_seq` value in normal buddy snapshots.
 
-- Managed Codex sessions increment the sequence for a unique successful `turn/completed` event.
+- Managed OpenCode sessions increment the sequence for a unique successful `turn/completed` event.
 - `item/completed` is ignored because it represents individual commands or tool items inside a turn.
 - Repeated heartbeats, catalog visibility, and reconnects retain the same sequence rather than creating another completion.
 - Firmware treats the first received sequence as a baseline and does not chime on initial connection. A later sequence change plays the sound once.

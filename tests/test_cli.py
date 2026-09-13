@@ -11,7 +11,7 @@ from typing import Optional
 
 import pytest
 
-from codex_buddy import cli
+from opencode_buddy import cli
 
 
 def _project_version() -> str:
@@ -79,7 +79,7 @@ def test_pair_resends_time_sync_before_disconnect(monkeypatch):
         @classmethod
         async def discover(cls, *, timeout: float = 4.0):
             events.append(("discover", timeout))
-            return [argparse.Namespace(device_id="dev-1", name="Codex-1234")]
+            return [argparse.Namespace(device_id="dev-1", name="OpenCode-1234")]
 
         async def connect(self) -> None:
             events.append("connect")
@@ -118,7 +118,7 @@ def test_pair_resends_time_sync_before_disconnect(monkeypatch):
 
     assert exit_code == 0
     assert ("discover", 4.0) in events
-    assert ("init", "dev-1", "Codex-1234") in events
+    assert ("init", "dev-1", "OpenCode-1234") in events
     assert "connect" in events
     assert "time_sync" in events
     assert ("sleep", 0.25) in events
@@ -135,8 +135,8 @@ def test_pair_prompts_for_choice_when_multiple_devices_found(monkeypatch):
         @classmethod
         async def discover(cls, *, timeout: float = 4.0):
             return [
-                argparse.Namespace(device_id="dev-1", name="Codex-1111"),
-                argparse.Namespace(device_id="dev-2", name="Codex-2222"),
+                argparse.Namespace(device_id="dev-1", name="OpenCode-1111"),
+                argparse.Namespace(device_id="dev-2", name="OpenCode-2222"),
             ]
 
         async def connect(self) -> None:
@@ -176,74 +176,17 @@ def test_pair_prompts_for_choice_when_multiple_devices_found(monkeypatch):
     exit_code = asyncio.run(cli._pair(args))
 
     assert exit_code == 0
-    assert ("init", "dev-2", "Codex-2222") in events
-    assert ("saved", "dev-2", "Codex-2222") in events
+    assert ("init", "dev-2", "OpenCode-2222") in events
+    assert ("saved", "dev-2", "OpenCode-2222") in events
 
 
-def test_run_uses_agent_launch_and_executes_local_codex_remote(monkeypatch):
-    events: list[object] = []
-
-    class FakeStore:
-        def __init__(self, path) -> None:
-            events.append(("store_init", path))
-
-        def load(self):
-            return cli.PersistedState(paired_device_id="dev-1", paired_device_name="Codex-1234")
-
-    async def fake_ensure_agent_running(state_path) -> None:
-        events.append(("ensure_agent", state_path))
-
-    async def fake_agent_request(state_path, payload):
-        events.append(("agent_request", state_path, payload))
-        return {"ok": True, "proxy_url": "ws://127.0.0.1:4567"}
-
-    class FakeProcess:
-        async def wait(self) -> int:
-            return 23
-
-    async def fake_create_subprocess_exec(*command, **kwargs):
-        events.append(("spawn", command, kwargs))
-        return FakeProcess()
-
-    monkeypatch.setattr(cli, "BridgeStateStore", FakeStore)
-    monkeypatch.setattr(cli, "_ensure_agent_running", fake_ensure_agent_running)
-    monkeypatch.setattr(cli, "_agent_request", fake_agent_request)
-    monkeypatch.setattr(cli.asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
-
-    args = argparse.Namespace(
-        state_path="/tmp/codebuddy-state.json",
-        workdir=cli.Path("/tmp/demo"),
-        prompt="Inspect this project",
-        command="run",
-    )
-
-    exit_code = asyncio.run(cli._run(args))
-
-    assert exit_code == 23
-    assert ("ensure_agent", "/tmp/codebuddy-state.json") in events
-    assert (
-        "agent_request",
-        "/tmp/codebuddy-state.json",
-        {"cmd": "launch", "workdir": "/tmp/demo"},
-    ) in events
-    spawn = next(item for item in events if item[0] == "spawn")
-    assert spawn[1] == (
-        "codex",
-        "--remote",
-        "ws://127.0.0.1:4567",
-        "-a",
-        "untrusted",
-        "-C",
-        "/tmp/demo",
-        "Inspect this project",
-    )
-
-
-def test_setup_records_current_path_for_codex_subprocesses(tmp_path, monkeypatch):
+def test_setup_installs_opencode_plugin_and_records_helper(tmp_path, monkeypatch):
     state_path = tmp_path / "state.json"
     helper_path = tmp_path / "helper" / "CodeBuddyBLEHelper.app"
     helper_path.mkdir(parents=True)
-    selected = argparse.Namespace(device_id="dev-1", name="Codex-1234")
+    plugin_path = tmp_path / "plugins" / "code-buddy.js"
+    selected = argparse.Namespace(device_id="dev-1", name="CodeBuddy-1234")
+    plugin_calls = []
 
     async def fake_resolve_selected_device(args, current):
         return selected
@@ -258,25 +201,19 @@ def test_setup_records_current_path_for_codex_subprocesses(tmp_path, monkeypatch
             )
         )
 
-    def fake_write_codex_shim(shim_path, *, python_executable):
-        return None
+    def fake_install_opencode_plugin(destination=None):
+        plugin_calls.append(destination)
+        plugin_path.parent.mkdir(parents=True, exist_ok=True)
+        plugin_path.write_text("// plugin\n", encoding="utf-8")
+        return plugin_path
 
     monkeypatch.setattr(cli.sys, "platform", "darwin")
-    monkeypatch.setenv("PATH", "/custom/node/bin:/usr/bin:/bin")
-    monkeypatch.setattr(cli.setup_flow, "migrate_legacy_state", lambda: False)
     monkeypatch.setattr(cli.setup_flow, "ensure_helper_app_installed", lambda: helper_path)
     monkeypatch.setattr(
         cli.setup_flow, "ensure_firmware_artifact_installed", lambda: tmp_path / "firmware.bin"
     )
-    monkeypatch.setattr(
-        cli.setup_flow,
-        "resolve_real_codex_path",
-        lambda shim_dir, *, saved_path="": cli.Path("/usr/local/bin/codex"),
-    )
-    monkeypatch.setattr(cli.setup_flow, "write_codex_shim", fake_write_codex_shim)
+    monkeypatch.setattr(cli.setup_flow, "install_opencode_plugin", fake_install_opencode_plugin)
     monkeypatch.setattr(cli.setup_flow, "is_setup_complete", lambda state: True)
-    monkeypatch.setattr(cli.shell_integration, "install_path_block", lambda zprofile_path, shim_dir: None)
-    monkeypatch.setattr(cli.shell_integration, "has_path_block", lambda zprofile_path: True)
     monkeypatch.setattr(cli, "_resolve_selected_device", fake_resolve_selected_device)
     monkeypatch.setattr(cli, "_pair_selected_device", fake_pair_selected_device)
     monkeypatch.setattr(cli, "_install_launchd_service", lambda state_path: None)
@@ -286,8 +223,9 @@ def test_setup_records_current_path_for_codex_subprocesses(tmp_path, monkeypatch
 
     saved = cli.BridgeStateStore(state_path).load()
     assert exit_code == 0
-    assert saved.real_codex_path == "/usr/local/bin/codex"
-    assert saved.codex_launch_path == "/custom/node/bin:/usr/bin:/bin"
+    assert plugin_calls == [None]
+    assert saved.helper_app_path == str(helper_path)
+    assert saved.service_installed is True
 
 
 def test_setup_fails_before_pairing_when_bundled_firmware_is_missing(
@@ -302,7 +240,6 @@ def test_setup_fails_before_pairing_when_bundled_firmware_is_missing(
         raise AssertionError("pairing must not start without bundled firmware")
 
     monkeypatch.setattr(cli.sys, "platform", "darwin")
-    monkeypatch.setattr(cli.setup_flow, "migrate_legacy_state", lambda: False)
     monkeypatch.setattr(cli.setup_flow, "ensure_helper_app_installed", lambda: helper_path)
     monkeypatch.setattr(
         cli.setup_flow,
@@ -361,9 +298,8 @@ def test_doctor_reports_loaded_agent_that_is_not_running():
     problems = cli._doctor_problems(
         {
             "paired_device_id": "dev-1",
-            "real_codex_exists": True,
+            "opencode_plugin_installed": True,
             "native_helper_error": None,
-            "shell_integrated": True,
             "agent_running": False,
             "launchd": {"loaded": True, "last_exit_status": 1},
         }
@@ -590,7 +526,7 @@ def test_firmware_update_real_sigint_exits_130_and_requests_cancel(tmp_path):
     script = """
 import asyncio, os, signal, sys
 from pathlib import Path
-from codex_buddy import cli
+from opencode_buddy import cli
 
 marker = Path(sys.argv[1])
 image = Path(sys.argv[2])

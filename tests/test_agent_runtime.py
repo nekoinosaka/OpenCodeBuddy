@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from codex_buddy.agent import AgentClient, BuddyAgent
-from codex_buddy.agent_runtime import (
+from opencode_buddy.agent import AgentClient, BuddyAgent
+from opencode_buddy.agent_runtime import (
     AgentProcessLock,
     cleanup_stale_ota_runtime,
     ensure_private_runtime_root,
@@ -99,7 +99,6 @@ def test_concurrent_agent_start_preserves_the_live_socket_and_ping_owner(tmp_pat
         first = BuddyAgent(
             tmp_path / "state.json",
             socket_path=socket,
-            watcher=None,
             readonly_poll_interval=60,
             keepalive_interval=60,
             reconnect_interval=60,
@@ -107,7 +106,6 @@ def test_concurrent_agent_start_preserves_the_live_socket_and_ping_owner(tmp_pat
         second = BuddyAgent(
             tmp_path / "state.json",
             socket_path=socket,
-            watcher=None,
             readonly_poll_interval=60,
             keepalive_interval=60,
             reconnect_interval=60,
@@ -280,7 +278,7 @@ def test_sigkill_releases_lock_and_next_owner_cleans_valid_residue(tmp_path):
     script = """
 import os
 from pathlib import Path
-from codex_buddy.agent_runtime import AgentProcessLock
+from opencode_buddy.agent_runtime import AgentProcessLock
 lock = AgentProcessLock(Path(os.environ['LOCK']))
 lock.acquire()
 snapshot = Path(os.environ['SNAPSHOTS']) / '.snapshot-killed'

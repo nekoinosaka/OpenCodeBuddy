@@ -44,7 +44,7 @@
 ### Task 4: Package and deploy
 
 **Files:**
-- Modify: `src/codex_buddy/firmware/code-buddy-sticks3-app.bin`
+- Modify: `src/opencode_buddy/firmware/code-buddy-sticks3-app.bin`
 
 1. Run `scripts/build-firmware-release.sh` and verify embedded version 0.1.8.
 2. Commit the implementation and packaged application image.

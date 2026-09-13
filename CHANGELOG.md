@@ -10,7 +10,7 @@
 
 ## 0.1.43 - 2026-08-31
 
-- Restarted the owned Codex app-server after an account rate-limit read error so refreshed credentials can restore live allowance updates automatically while the last valid meter remains visible.
+- Restarted the owned OpenCode app-server after an account rate-limit read error so refreshed credentials can restore live allowance updates automatically while the last valid meter remains visible.
 
 ## 0.1.42 - 2026-08-26
 
@@ -19,7 +19,7 @@
 
 ## 0.1.41 - 2026-07-23
 
-- Kept the last valid Codex allowance visible when a fresh account-rate-limit read is temporarily unavailable, malformed, or reported as `null`.
+- Kept the last valid OpenCode allowance visible when a fresh account-rate-limit read is temporarily unavailable, malformed, or reported as `null`.
 - Restored the last valid allowance from the Mac bridge state after an agent restart and stopped emitting destructive usage clears.
 - Preserved the device's in-memory quota meter across BLE disconnects so the portrait bar and landscape dot matrix no longer disappear with task telemetry.
 
@@ -59,7 +59,7 @@
 
 ## 0.1.34 - 2026-07-22
 
-- Changed the Codex heartbeat to a true strip chart: stable historical samples move left while the newest sample enters from the right, without reshaping old peaks.
+- Changed the OpenCode heartbeat to a true strip chart: stable historical samples move left while the newest sample enters from the right, without reshaping old peaks.
 - Rendered the complete 64-by-14 heartbeat into an off-screen sprite before presenting it, removing the visible clear-and-redraw flash.
 - Increased the OTA I/O idle tolerance from 5 to 15 seconds so short Wi-Fi stalls do not abandon an otherwise healthy firmware download.
 - Switched dashboard English labels to crisp built-in pixel fonts while retaining JetBrains Mono for numbers and time punctuation, with its OpenType slashed-zero alternate baked into every generated size.
@@ -68,12 +68,12 @@
 ## 0.1.33 - 2026-07-21
 
 - Moved the landscape status label down one pixel and reduced its indicator from 12-by-12 to 8-by-8 while preserving the original vertical center.
-- Increased the continuous Codex heartbeat amplitude from five to six pixels within the existing 64-by-14 region.
+- Increased the continuous OpenCode heartbeat amplitude from five to six pixels within the existing 64-by-14 region.
 
 ## 0.1.32 - 2026-07-21
 
 - Moved the seconds and quarter-minute indicators up two pixels and raised the status label by two pixels without moving its status dot.
-- Made the 20-second Codex heartbeat a full-width continuous curve, refreshed independently at up to 20 FPS with subsecond interpolation for faster, smoother activity feedback.
+- Made the 20-second OpenCode heartbeat a full-width continuous curve, refreshed independently at up to 20 FPS with subsecond interpolation for faster, smoother activity feedback.
 
 ## 0.1.31 - 2026-07-21
 
@@ -92,7 +92,7 @@
 ## 0.1.28 - 2026-07-21
 
 - Rebuilt the 240-by-135 landscape dashboard from the Figma layout with a four-state `RUNNING` / `WAITING` / `IDLE` / `OFFLINE` indicator, a compact time and full-date composition, and tinted `RUN` / `ASK` / `NEW` cards.
-- Added an optional 20-bit `activity20` snapshot field so the device can render the most recent 20 seconds of real managed and Codex Desktop activity independently from the BLE keepalive.
+- Added an optional 20-bit `activity20` snapshot field so the device can render the most recent 20 seconds of real managed and OpenCode Desktop activity independently from the BLE keepalive.
 - Added four quarter-minute blocks above the seconds display and preserved the existing animated 29-by-3 quota matrix with updated four-pixel side and bottom spacing.
 - Expanded the reproducible JetBrains Mono ASCII asset to include Regular and Medium weights while increasing firmware size by only about 3 KiB.
 
@@ -161,14 +161,14 @@
 ### Device experience
 
 - Added a shared landscape face with a larger clock, pet, and `RUN` / `ASK` / `NEW` task dashboard.
-- Added a 2x2-dot Codex allowance meter with separate remaining and consumed colors.
-- Added one completion chime per full Codex turn, controlled by the device sound setting.
+- Added a 2x2-dot OpenCode allowance meter with separate remaining and consumed colors.
+- Added one completion chime per full OpenCode turn, controlled by the device sound setting.
 - Added compact automatic OTA progress and hardened display transitions, clock rendering, and unread-count handling.
 
 ### Host and protocol
 
-- Added Codex account rate-limit monitoring for five-hour and seven-day remaining allowance.
-- Added read-only Codex Desktop task discovery, unread counts, and de-duplicated Desktop completion signals.
+- Added OpenCode account rate-limit monitoring for five-hour and seven-day remaining allowance.
+- Added read-only OpenCode Desktop task discovery, unread counts, and de-duplicated Desktop completion signals.
 - Added signed Mac-push and automatic Wi-Fi OTA with pinned trust, one-time manifests, boot-health validation, and rollback protection.
 - Hardened account-monitor startup, cancellation, retry, BLE ownership, oversized snapshots, and packaged firmware handling.
 
@@ -179,4 +179,4 @@
 
 ## 0.1.4 - 2026-04-26
 
-- Improved managed Codex launch reliability on macOS and cleaned up process groups after bridge shutdown or startup failure.
+- Improved managed OpenCode launch reliability on macOS and cleaned up process groups after bridge shutdown or startup failure.

@@ -7,10 +7,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from codex_buddy.ota_coordination import OtaAgentSession, OtaCoordinator
-from codex_buddy.ble_transport import NativeBleHelperError
-from codex_buddy.ota_release import OtaImageInfo
-from codex_buddy.ota_trust import generate_ota_trust
+from opencode_buddy.ota_coordination import OtaAgentSession, OtaCoordinator
+from opencode_buddy.ble_transport import NativeBleHelperError
+from opencode_buddy.ota_release import OtaImageInfo
+from opencode_buddy.ota_trust import generate_ota_trust
 
 
 NONCE = "n" * 24
@@ -326,7 +326,7 @@ def test_coordination_negotiates_legacy_and_signed_offer_shapes(
                 _status("accepted", version=target_version),
                 _status("running", version=target_version, percent=100, health="valid"),
             ],
-            device_name="Codex-4DAD",
+            device_name="OpenCode-4DAD",
         )
         trust = generate_ota_trust(tmp_path / f"trust-{current_version}")
 
@@ -354,13 +354,13 @@ def test_coordination_negotiates_legacy_and_signed_offer_shapes(
     assert len(offers) == 1
     assert set(offers[0]) == expected_fields
     if current_version == "0.1.6":
-        assert offers[0]["device"] == "Codex-4DAD"
+        assert offers[0]["device"] == "OpenCode-4DAD"
         assert offers[0]["issuedAt"] == 1_700_000_000
         assert offers[0]["expiresAt"] == 1_700_000_120
         assert bytes.fromhex(offers[0]["authorization"])
 
 
-@pytest.mark.parametrize("device_name", [None, "Codex-4dad", "Other-4DAD"])
+@pytest.mark.parametrize("device_name", [None, "OpenCode-4dad", "Other-4DAD"])
 def test_modern_coordination_fails_closed_without_canonical_transport_device_name(
     tmp_path, device_name
 ):

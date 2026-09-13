@@ -14,48 +14,44 @@
 <h1 align="center">Code Buddy</h1>
 
 <p align="center">
-  一个基于 StickS3 的 Codex 硬件伙伴，改编自
-  <a href="https://github.com/anthropics/claude-desktop-buddy">Claude Desktop Buddy</a>。
+  一个基于 StickS3 的 <a href="https://opencode.ai">OpenCode</a> 硬件伙伴，改编自
+  <a href="https://github.com/anthropics/claude-desktop-buddy">Claude Desktop Buddy</a>
+  和 <a href="https://github.com/CharlexH/CodeBuddy">CodeBuddy</a>。
 </p>
 
 <p align="center">
-  给设备刷一次固件，在 macOS 上运行一次 <code>code-buddy</code>，之后照常使用 <code>codex</code>，审批提示和会话状态就会转移到独立硬件上。
+  给设备刷一次固件，在 macOS 上运行一次 <code>code-buddy</code>，之后照常使用 <code>opencode</code>，审批提示和会话状态就会转移到独立硬件上。
 </p>
 
 > 如果你想自己做硬件客户端，可以看 [firmware/REFERENCE.md](firmware/REFERENCE.md) 里的 BLE 协议和 JSON 负载定义。
 
 ## 项目包含什么
 
-- 一个 macOS 主机桥接层，负责与 StickS3 配对、同步时间、安装原生 BLE helper，并管理本地 `codex` shim。
+- 一个 macOS 主机桥接层，负责与 StickS3 配对、同步时间、安装原生 BLE helper，并安装 OpenCode 插件。
+- 一个 OpenCode 插件，负责转发实时会话事件，并把审批请求路由到设备。
 - 一套 StickS3 固件，包含状态页、审批页、设置页和离线页。
-- 一套尽量不打扰日常工作的流程：先跑一次 `code-buddy`，之后直接用 `codex`。
+- 一套尽量不打扰日常工作的流程：先跑一次 `code-buddy`，之后直接用 `opencode`。
 
-## v0.1.45 亮点
+## 工作原理
 
-- 打包发布和本地 repair 重建的原生 BLE Helper 现在都显式以 macOS 13 为最低版本，即使在预发布 macOS 上构建，也能在所有受支持的 macOS 版本上正常启动。
-- Codex app-server 的旧凭证失效时，实时额度更新会自动恢复；恢复期间仍保留最近一次有效额度。
-- 正常重启后，USB 供电的横屏时钟不再等待 Mac 重连：设备会离线复用可信的 RTC 时间；RTC 回到 2000-01-01 时仍会要求下一次可信同步。
-- `code-buddy doctor` 现在会把“launchd 已加载但 Agent 持续崩溃”报告为真实故障，不再误报 ready。
-- 暂时拿不到最新账户额度、返回 `null` 或 BLE 断开时，额度进度不再消失；Mac 桥接进程重启后也会恢复最近一次有效值，而不是清空设备显示。
-- 按 Figma 重做的横屏状态页继续显示 `RUNNING`、`WAITING`、`IDLE` 或 `OFFLINE`，心跳则改为最近 20 秒真实输入加输出 token 消耗曲线；新采样从右侧进入并向左推进，活动越强，颜色越从绿色靠近 mint。
-- 自动旋转首页会在第一帧前判断明确姿态，并在菜单、设置等竖屏页面之间保留最近一次稳定方向，修复设备明明已经横放却先闪一下竖屏再切回横屏的问题。
-- 竖屏首页保留原来的 90px 高、1× ASCII pet，并在居中前恢复其内置 6×8 点阵字体；`HH:MM:SS` 统一为同一基线上的原生 14pt 单行时间，秒保持弱化色，日期使用原生 8pt。
-- 英文标签恢复为原生字号的 JetBrains Mono Regular/Bold，数字保留斜杠零；0 计数显示为 40% 白，秒显示为 60% 白，月日和星期使用纯白。
-- 29×3 额度点阵保留 6px 圆点和任务运行时的对角波形，底部和左侧对齐到新的 4px 边界。
-- 横屏时钟和状态页使用原生字号的 JetBrains Mono Regular/Bold 位图子集，不再做分数倍拉伸；非 ASCII 界面继续使用一套比例字体，并保留充足的应用分区空间。
-- 每个完整 Codex turn 结束后只响一次；既支持受管的 CLI 会话，也支持从本地日志发现的 Codex Desktop 主任务，并会自动排除重复快照和 subagent 完成事件。
-- 安全 Wi-Fi OTA 支持 Mac 手动推送和可选的自动更新，包含签名清单、物理确认、回滚检查和设备端紧凑进度提示。
-- 充电时钟和任务运行界面共用横屏布局，同时保证审批与设置界面可读。
+Code Buddy 由三部分组成：
+
+1. **设备固件**：以 `OpenCode-XXXX` 广播 Nordic UART Service，渲染宠物、状态和审批界面。
+2. **`code-buddy` agent**：作为 launchd 服务常驻，独占蓝牙连接，并持续把快照推送到设备。
+3. **OpenCode 插件**（`~/.config/opencode/plugins/code-buddy.js`）：运行在 OpenCode 进程内。启动时把 server URL 交给 agent，转发总线事件（`session.status`、`message.updated`、`message.part.updated`、`permission.*`），并实现 `permission.ask` hook，让设备可以批准或拒绝。
+
+有待审批请求时，StickS3 会显示提示：**A** 批准一次，**B** 拒绝。设备不在线时，会自动回退到 OpenCode 原生界面（agent 最多等待 60 秒后返回 `ask`）。
+
+会话历史和 token/费用统计来自 OpenCode server（`GET /session`）。插件会自动提供 server URL，因此只要 agent 能访问该 server，历史就能正常工作。也可以用 `OPENCODE_SERVER_URL` 指向一个独立的 `opencode serve` 实例。
 
 ## 快速开始
 
 ### 1. 给 StickS3 刷机
 
-从 GitHub Releases 下载 `code-buddy-sticks3-v{version}-full.bin`，然后写入到 `0x0`。
+从 Releases 下载 `code-buddy-sticks3-v{version}-full.bin`，然后写入到 `0x0`。
 
-优先方式：
-
-- 如果当前 release 提供 web flasher，直接用它把合并镜像写到 `0x0`。
+<details>
+<summary>刷写命令</summary>
 
 兜底方式：
 
@@ -70,24 +66,39 @@ esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 
 ```
 
 脚本会生成两种不同的文件：`*-full.bin` 是 USB 恢复/首次刷写镜像，`*-app.bin` 是 OTA 使用的应用镜像。不要把合并后的 `full.bin` 传给 OTA 命令。
+</details>
 
 ### 2. 在 macOS 上安装
 
+从源码安装：
+
 ```bash
-brew install CharlexH/tap/code-buddy
-code-buddy
+git clone https://github.com/nekoinosaka/CodeBuddy.git
+cd CodeBuddy
+python3 -m venv .venv
+.venv/bin/pip install -e '.[dev]'
+.venv/bin/code-buddy
 ```
 
 首次运行时，Code Buddy 会：
 
 - 安装原生蓝牙 helper
-- 与 `Codex-*` 设备配对
+- 与 `OpenCode-*` 设备配对
 - 同步设备时间
 - 安装 launchd agent
-- 安装本地 `codex` shim
-- 把 `~/.code-buddy/bin` 加进 `~/.zprofile`
+- 把 OpenCode 插件安装到 `~/.config/opencode/plugins/code-buddy.js`
 
 仅主机侧的更新在协议仍兼容时不需要重新刷机；涉及屏幕、声音或 OTA 运行时的功能，需要配套版本的设备固件。
+
+### 3. 正常使用
+
+```bash
+opencode
+```
+
+安装完成后请重启 OpenCode，让它加载插件。此后你可以保持原来的使用方式，Code Buddy 会在后台维持桥接，并把审批提示显示到 StickS3 上。
+
+会话事件由插件转发，因此**不需要任何 shim 或 wrapper**，像平时一样运行 `opencode` 即可。
 
 ### 无线固件更新
 
@@ -103,23 +114,9 @@ code-buddy firmware update
 code-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/firmware.bin
 ```
 
-主机代理会作为唯一的蓝牙所有者，为一次性不可变清单签名，通过短时本地 HTTPS 提供 app-only 镜像，并等待设备 A 键确认。Mac 只有在设备重连并证明目标版本已运行、首次启动健康状态有效后才会报告成功。不要把 `*-full.bin` 用于 OTA。
-
-打开 **Settings > auto ota** 后，设备可以自动接受更新的可信版本。自动更新仍遵循相同的签名、版本、启动健康检查和回滚策略。
+主机代理会作为唯一的蓝牙所有者，为一次性不可变清单签名，通过短时本地 HTTPS 提供 app-only 镜像，并等待设备 A 键确认。提交启动分区前按 B 或 Ctrl-C 可以取消。
 
 正常使用时，原生 BLE helper 会作为 macOS 后台 agent 运行，所以重连过程不应该再打开 helper 窗口或抢走焦点。macOS 首次蓝牙权限确认仍可能出现，这是系统权限弹窗，不能跳过。如果需要调试 helper 事件，可以用 `CODE_BUDDY_BLE_HELPER_DEBUG_WINDOW=1` 打开事件日志窗口。
-
-### 3. 正常使用
-
-```bash
-codex
-```
-
-初始化完成后请开一个新 shell。此后你可以保持原来的 CLI 使用方式，Code Buddy 会在后台维持桥接，并把审批提示显示到 StickS3 上。
-
-Codex Desktop 任务通过本地 Codex 会话日志以只读方式发现，可以更新状态数字、未查看数量和完成提示音；Desktop 的审批请求不会转发到设备。
-
-较大的本地会话日志扫描会在桥接进程的异步事件循环之外执行，避免阻塞每 10 秒一次的 BLE 保活并误触设备的 30 秒离线状态。如果核心桥接任务意外退出，Agent 会完整退出，再由现有 launchd 服务自动重启。
 
 ## 按键说明
 

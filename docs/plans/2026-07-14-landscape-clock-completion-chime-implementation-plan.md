@@ -2,21 +2,21 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Enlarge and restructure the StickS3 landscape clock, then play one compact two-note sound for every successfully completed managed Codex turn.
+**Goal:** Enlarge and restructure the StickS3 landscape clock, then play one compact two-note sound for every successfully completed managed OpenCode turn.
 
 **Architecture:** Keep the existing shared clock renderer and change only its landscape geometry. Carry a persisted monotonic `completion_seq` from app-server `turn/completed` events through the agent snapshot to firmware; firmware establishes a baseline on first receipt and plays once for each later sequence change.
 
-**Tech Stack:** Python 3.13, pytest, Codex app-server websocket events, JSON over BLE NUS, C++17 pure firmware tests, ArduinoJson, M5Unified, PlatformIO.
+**Tech Stack:** Python 3.13, pytest, OpenCode app-server websocket events, JSON over BLE NUS, C++17 pure firmware tests, ArduinoJson, M5Unified, PlatformIO.
 
 ---
 
 ### Task 1: Preserve terminal turn status and emit a deduplicated completion sequence
 
 **Files:**
-- Modify: `src/codex_buddy/events.py`
-- Modify: `src/codex_buddy/proxy.py`
-- Modify: `src/codex_buddy/reducer.py`
-- Modify: `src/codex_buddy/agent.py`
+- Modify: `src/opencode_buddy/events.py`
+- Modify: `src/opencode_buddy/proxy.py`
+- Modify: `src/opencode_buddy/reducer.py`
+- Modify: `src/opencode_buddy/agent.py`
 - Test: `tests/test_proxy.py`
 - Test: `tests/test_reducer.py`
 - Test: `tests/test_agent.py`
@@ -67,16 +67,16 @@ Expected: all focused tests pass.
 **Step 5: Commit**
 
 ```bash
-git add src/codex_buddy/events.py src/codex_buddy/proxy.py src/codex_buddy/reducer.py src/codex_buddy/agent.py tests/test_proxy.py tests/test_reducer.py tests/test_agent.py
+git add src/opencode_buddy/events.py src/opencode_buddy/proxy.py src/opencode_buddy/reducer.py src/opencode_buddy/agent.py tests/test_proxy.py tests/test_reducer.py tests/test_agent.py
 git commit -m "feat: publish completed turn sequence"
 ```
 
 ### Task 2: Persist the completion sequence across host restarts
 
 **Files:**
-- Modify: `src/codex_buddy/state_store.py`
-- Modify: `src/codex_buddy/agent.py`
-- Modify: `src/codex_buddy/bridge.py`
+- Modify: `src/opencode_buddy/state_store.py`
+- Modify: `src/opencode_buddy/agent.py`
+- Modify: `src/opencode_buddy/bridge.py`
 - Test: `tests/test_state_store.py`
 - Test: `tests/test_agent.py`
 
@@ -109,7 +109,7 @@ Expected: all tests pass.
 **Step 5: Commit**
 
 ```bash
-git add src/codex_buddy/state_store.py src/codex_buddy/agent.py src/codex_buddy/bridge.py tests/test_state_store.py tests/test_agent.py
+git add src/opencode_buddy/state_store.py src/opencode_buddy/agent.py src/opencode_buddy/bridge.py tests/test_state_store.py tests/test_agent.py
 git commit -m "feat: persist completed turn sequence"
 ```
 

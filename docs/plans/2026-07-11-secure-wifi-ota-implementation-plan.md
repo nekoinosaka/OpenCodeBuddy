@@ -12,7 +12,7 @@
 
 ## Scope and non-goals
 
-- Keep BLE/NUS as the only Codex approval and local bridge transport. Wi-Fi never receives Codex credentials, approval decisions, session data, or a raw firmware stream from the Mac.
+- Keep BLE/NUS as the only OpenCode approval and local bridge transport. Wi-Fi never receives OpenCode credentials, approval decisions, session data, or a raw firmware stream from the Mac.
 - Wi-Fi is for optional on-device operations: OTA, a future NTP fallback, release notes, and diagnostics. The host-synced BLE clock remains the primary clock source.
 - OTA updates only the application image. Do not OTA `full.bin`, bootloader, partition table, LittleFS, NVS, or an arbitrary URL.
 - Do not run automatic background checks or automatic installs. The user must invoke both check and install on the device, and the update screen must show version, size, and release notes before download.
@@ -303,7 +303,7 @@ git commit -m "build: publish signed Code Buddy OTA releases"
 - Modify: `firmware/src/main.cpp`
 - Test: `firmware/tests/wifi_state_logic_test.cpp`
 
-After OTA is proven, add only these opt-in operations: NTP as an offline/host-absent clock fallback, Wi-Fi signal/status diagnostics, and signed release-note retrieval. Keep default telemetry off and leave Codex account limits, session content, and approval decisions on the existing local host/BLE design.
+After OTA is proven, add only these opt-in operations: NTP as an offline/host-absent clock fallback, Wi-Fi signal/status diagnostics, and signed release-note retrieval. Keep default telemetry off and leave OpenCode account limits, session content, and approval decisions on the existing local host/BLE design.
 
 ## Verification checklist
 

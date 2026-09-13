@@ -45,7 +45,7 @@ def test_fresh_wheel_install_builds_and_codesigns_native_helper(tmp_path):
         [
             sys.executable,
             "-c",
-            "from codex_buddy.setup_flow import ensure_helper_app_installed; "
+            "from opencode_buddy.setup_flow import ensure_helper_app_installed; "
             "print(ensure_helper_app_installed())",
         ],
         cwd=home,

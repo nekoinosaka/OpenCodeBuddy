@@ -68,8 +68,8 @@ inline bool otaAuthorizationMayReportRejection(OtaAuthorizationResult result) {
 }
 
 inline bool otaAuthorizationDeviceNameValid(const char* value) {
-  if (!value || strlen(value) != 10 || memcmp(value, "Codex-", 6) != 0) return false;
-  for (size_t i = 6; i < 10; ++i) {
+  if (!value || strlen(value) != 13 || memcmp(value, "OpenCode-", 9) != 0) return false;
+  for (size_t i = 9; i < 13; ++i) {
     if (!otaAsciiDigit(value[i]) && !(value[i] >= 'A' && value[i] <= 'F')) return false;
   }
   return true;

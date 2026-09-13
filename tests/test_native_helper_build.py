@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from codex_buddy.native_helper_build import (
+from opencode_buddy.native_helper_build import (
     build_bundled_native_helper,
     cleanup_bundled_native_helper_build,
 )

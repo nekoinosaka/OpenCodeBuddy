@@ -1,7 +1,7 @@
 import base64
 import math
 
-from codex_buddy.token_heartbeat import BIN_SECONDS, MAX_RAW_VALUE, TokenHeartbeat
+from opencode_buddy.token_heartbeat import BIN_SECONDS, MAX_RAW_VALUE, TokenHeartbeat
 
 
 def decode(encoded: str) -> bytes:

@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from codex_buddy.catalog import SessionCatalog, SessionPrompt, SessionRecord
+from opencode_buddy.catalog import SessionCatalog, SessionPrompt, SessionRecord
 
 
 def _session(
@@ -13,7 +13,7 @@ def _session(
     entries: Optional[List[str]] = None,
     cwd: str = "/tmp/project",
     source: str = "cli",
-    originator: str = "codex-tui",
+    originator: str = "opencode-tui",
     tokens_total: int = 0,
     tokens_session: int = 0,
     heartbeat_tokens_total: Optional[int] = None,
@@ -158,7 +158,7 @@ def test_readonly_replace_does_not_clobber_managed_prompt_for_same_session_id():
                 latest_message="Deleting `/tmp/demo`",
                 entries=["Deleting `/tmp/demo`"],
                 source="vscode",
-                originator="Codex Desktop",
+                originator="OpenCode Desktop",
             )
         ]
     )
@@ -234,7 +234,7 @@ def test_stale_completed_sessions_drop_out_of_the_visible_snapshot():
     assert snapshot.total == 0
     assert snapshot.running == 0
     assert snapshot.waiting == 0
-    assert snapshot.msg == "No Codex connected"
+    assert snapshot.msg == "No OpenCode connected"
     assert snapshot.entries == []
     assert snapshot.prompt is None
 

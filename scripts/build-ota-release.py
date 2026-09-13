@@ -8,8 +8,8 @@ from pathlib import Path
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 
-from codex_buddy import runtime
-from codex_buddy.ota_release import (
+from opencode_buddy import runtime
+from opencode_buddy.ota_release import (
     build_ota_release,
     inspect_esp32s3_application_image,
 )

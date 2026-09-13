@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from codex_buddy.ota_release import (
+from opencode_buddy.ota_release import (
     inspect_esp32s3_application_image,
     build_ota_release,
     canonical_manifest_bytes,
@@ -22,7 +22,7 @@ from codex_buddy.ota_release import (
     cleanup_ota_release,
     snapshot_ota_image,
 )
-from codex_buddy.ota_trust import bootstrap_ota_trust, generate_ota_trust
+from opencode_buddy.ota_trust import bootstrap_ota_trust, generate_ota_trust
 
 
 ONE_TIME_URL = "https://192.168.1.20:49321/0123456789abcdefghijklmn/firmware.bin"
@@ -406,7 +406,7 @@ def test_host_url_policy_matches_device_one_shot_endpoint():
 
 def test_firmware_current_version_matches_host_package_version():
     project = Path(__file__).resolve().parents[1]
-    package_version = __import__("codex_buddy").__version__
+    package_version = __import__("opencode_buddy").__version__
     version_header = (project / "firmware/src/firmware_version.h").read_text()
 
     assert f'#define CODE_BUDDY_FIRMWARE_VERSION "{package_version}"' in version_header

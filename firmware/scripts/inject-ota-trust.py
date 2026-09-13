@@ -220,7 +220,7 @@ def _managed_paths(root: Path, repository_root: Optional[Path] = None):
     if repository_root is None:
         repository_root = Path(__file__).resolve().parents[2]
     sys.path.insert(0, str(repository_root / "src"))
-    from codex_buddy.ota_trust import load_ota_trust_pins, ota_trust_paths
+    from opencode_buddy.ota_trust import load_ota_trust_pins, ota_trust_paths
 
     trust = ota_trust_paths(Path(root))
     pins = load_ota_trust_pins(trust)

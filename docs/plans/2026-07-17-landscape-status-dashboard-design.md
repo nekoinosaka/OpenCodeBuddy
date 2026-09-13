@@ -2,16 +2,16 @@
 
 ## Goal
 
-Refine the StickS3 landscape shared clock face into a compact Codex dashboard: keep the pet on the left half of the top region, show local task status counts on the right, move time and date slightly lower, and enlarge the single usage meter to a visually dominant 20 px bar.
+Refine the StickS3 landscape shared clock face into a compact OpenCode dashboard: keep the pet on the left half of the top region, show local task status counts on the right, move time and date slightly lower, and enlarge the single usage meter to a visually dominant 20 px bar.
 
 ## Product boundaries
 
 - The device is display-only. It never marks a task read and adds no acknowledgement gesture.
-- `RUN` counts local Codex tasks currently executing.
-- `ASK` counts local Codex tasks waiting for approval or user input.
-- `NEW` mirrors the local Codex Desktop unread-thread collection. Opening a task in the client is the only action that clears its unread state.
+- `RUN` counts local OpenCode tasks currently executing.
+- `ASK` counts local OpenCode tasks waiting for approval or user input.
+- `NEW` mirrors the local OpenCode Desktop unread-thread collection. Opening a task in the client is the only action that clears its unread state.
 - Remote-host unread threads are excluded so `RUN`, `ASK`, and `NEW` share the same local scope.
-- Missing or malformed client state must not create a false count or write anything back to Codex state.
+- Missing or malformed client state must not create a false count or write anything back to OpenCode state.
 
 ## Language
 
@@ -19,26 +19,26 @@ OpenAI product language describes in-progress work and reviewing completed tasks
 
 - `RUN` for active work.
 - `ASK` for work that requires user action.
-- `NEW` for local unread tasks owned by the Codex client.
+- `NEW` for local unread tasks owned by the OpenCode client.
 
 This keeps the display human-readable rather than exposing internal enum names or unclear contractions such as `APV`.
 
 References:
 
-- https://openai.com/index/introducing-upgrades-to-codex/
+- https://openai.com/index/introducing-upgrades-to-opencode/
 - https://help.openai.com/en/articles/11096431
-- Local `codex-cli 0.128.0 app-server generate-json-schema` output for `ThreadStatus` and `ThreadActiveFlag`.
+- Local `opencode-cli 0.128.0 app-server generate-json-schema` output for `ThreadStatus` and `ThreadActiveFlag`.
 
 ## Data flow
 
 1. The existing session catalog continues to produce local `running` and `waiting` counts.
-2. A read-only Codex Desktop state watcher reads `~/.codex/.codex-global-state.json`.
+2. A read-only OpenCode Desktop state watcher reads `~/.opencode/.opencode-global-state.json`.
 3. It validates `electron-persisted-atom-state.unread-thread-ids-by-host-v1.local` as an array of unique string thread IDs and reports its length.
 4. If the file is temporarily unreadable, malformed during replacement, or the internal key disappears after a client update, the watcher retains its last trusted value for the current process. Before the first trusted read, `unread` is omitted rather than synthesized as zero.
 5. `BuddySnapshot` publishes the optional count as `"unread"` in the BLE payload.
 6. Firmware validates `unread` as an integer from 0 through 255, stores it as `unreadCount`, and renders it under the `NEW` label. Counts above 99 render as `99+`.
 
-Code Buddy never writes to Codex Desktop state.
+Code Buddy never writes to OpenCode Desktop state.
 
 ## Landscape layout
 
@@ -88,7 +88,7 @@ The surface remains 240 x 135.
 
 ## Failure behavior
 
-- No Codex state file: omit `unread`; firmware shows `NEW 0` in dim gray.
+- No OpenCode state file: omit `unread`; firmware shows `NEW 0` in dim gray.
 - Malformed state during an atomic client update: retain the last trusted count and retry on the next poll.
 - Client schema changes: retain the last trusted value for the process and log a bounded warning; never mutate client state.
 - BLE payload without `unread`: old hosts and firmware remain compatible.
@@ -98,7 +98,7 @@ The surface remains 240 x 135.
 
 - Landscape top region is split into equal 120 px pet and status halves.
 - `RUN`, `ASK`, and `NEW` display local counts and use the approved priority colors.
-- Opening a local unread task in Codex Desktop reduces `NEW` on the device after the next host poll and BLE publish.
+- Opening a local unread task in OpenCode Desktop reduces `NEW` on the device after the next host poll and BLE publish.
 - No device button changes unread state.
 - Time and date move down exactly 4 px without touching the usage meter.
 - The landscape shared clock shows one 20 px usage bar inside a 24 px footprint.

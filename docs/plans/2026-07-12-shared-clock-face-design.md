@@ -2,7 +2,7 @@
 
 ## Goal
 
-Make the standby clock and normal Codex-running screen use one shared visual component instead of two separate surfaces.
+Make the standby clock and normal OpenCode-running screen use one shared visual component instead of two separate surfaces.
 
 The shared face contains only:
 
@@ -15,7 +15,7 @@ No normal status label, transcript, scroll indicator, or session message returns
 
 ## Shared behavior
 
-Standby and active Codex runtime call the same renderer, use the same geometry, time formatting, colors, meter placement, and explicit repaint cache. They differ only in the pet persona state: standby continues its idle/sleep schedule while active Codex work uses the derived busy/waiting state.
+Standby and active OpenCode runtime call the same renderer, use the same geometry, time formatting, colors, meter placement, and explicit repaint cache. They differ only in the pet persona state: standby continues its idle/sleep schedule while active OpenCode work uses the derived busy/waiting state.
 
 The renderer is parameterized by orientation and render state rather than using `drawClock()` globals or function-local statics. Standby and active callers keep independent cache instances so orientation entry, seconds ticks, pet animation, and meter invalidation cannot contaminate one another.
 
