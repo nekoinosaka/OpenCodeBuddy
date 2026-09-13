@@ -31,6 +31,47 @@ from .launchd import (
 )
 from .opencode_server import default_server_url
 from .state_store import BridgeStateStore, PersistedState
+from . import windows_service
+
+
+def _is_windows() -> bool:
+    return sys.platform.startswith("win")
+
+
+def _install_agent_service(state_path: Path) -> None:
+    """Install the per-user background agent for the current platform."""
+
+    if _is_windows():
+        repo_root = Path(__file__).resolve().parents[2]
+        log_dir = default_log_dir(state_path)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        windows_service.install_windows_service(
+            python_executable=sys.executable,
+            state_path=state_path,
+            repo_root=repo_root,
+            log_dir=log_dir,
+        )
+        return
+    _install_launchd_service(state_path)
+
+
+def _uninstall_agent_service() -> None:
+    if _is_windows():
+        windows_service.uninstall_windows_service()
+        return
+    uninstall_launchd_service(launchd_plist_path())
+
+
+def _agent_service_status() -> dict:
+    if _is_windows():
+        return windows_service.windows_service_status()
+    return launchd_service_status(launchd_label())
+
+
+def _agent_service_location() -> str:
+    if _is_windows():
+        return f"Task Scheduler task: {windows_service.windows_task_name()}"
+    return str(launchd_plist_path())
 
 
 def default_state_path() -> Path:
@@ -142,7 +183,7 @@ def _uninstall(args: argparse.Namespace) -> int:
             print("Cancelled.")
             return 0
 
-    uninstall_launchd_service(launchd_plist_path())
+    _uninstall_agent_service()
     setup_flow.opencode_plugin_path().unlink(missing_ok=True)
     runtime_root = runtime.runtime_root()
     if runtime_root.exists():
@@ -152,9 +193,6 @@ def _uninstall(args: argparse.Namespace) -> int:
 
 
 async def _setup(args: argparse.Namespace, *, repair: bool = False) -> int:
-    if sys.platform != "darwin":
-        print("OpenCode Buddy currently supports macOS only.", file=sys.stderr)
-        return 1
     if await _ota_conflict_active(args.state_path):
         print("A firmware update is active. Wait for it to finish before repairing.", file=sys.stderr)
         return 1
@@ -162,12 +200,14 @@ async def _setup(args: argparse.Namespace, *, repair: bool = False) -> int:
     store = BridgeStateStore(state_path)
     current = store.load()
 
-    try:
-        helper_app_path = setup_flow.ensure_helper_app_installed()
-    except (NativeBleHelperError, subprocess.CalledProcessError, OSError) as exc:
-        print(f"Native BLE helper is unavailable: {exc}", file=sys.stderr)
-        print("Run `opencode-buddy repair` after the helper bundle is available.", file=sys.stderr)
-        return 1
+    helper_app_path: Path | None = None
+    if not _is_windows():
+        try:
+            helper_app_path = setup_flow.ensure_helper_app_installed()
+        except (NativeBleHelperError, subprocess.CalledProcessError, OSError) as exc:
+            print(f"Native BLE helper is unavailable: {exc}", file=sys.stderr)
+            print("Run `opencode-buddy repair` after the helper bundle is available.", file=sys.stderr)
+            return 1
 
     try:
         setup_flow.ensure_firmware_artifact_installed()
@@ -185,14 +225,14 @@ async def _setup(args: argparse.Namespace, *, repair: bool = False) -> int:
 
     await _pair_selected_device(store, selected)
     plugin_path = setup_flow.install_opencode_plugin()
-    _install_launchd_service(state_path)
+    _install_agent_service(state_path)
 
     current = store.load()
     next_state = replace(
         current,
         setup_version=setup_flow.SETUP_VERSION,
-        helper_app_path=str(helper_app_path),
-        service_installed=launchd_service_status(launchd_label())["loaded"],
+        helper_app_path=str(helper_app_path) if helper_app_path else current.helper_app_path,
+        service_installed=_agent_service_status()["loaded"],
     )
     store.save(next_state)
 
@@ -255,6 +295,13 @@ def _print_ota_interrupt_result(response: dict[str, object] | None) -> None:
 
 
 async def _firmware_update(args: argparse.Namespace) -> int:
+    if _is_windows():
+        print(
+            "Firmware updates over Wi-Fi are not supported on Windows yet. "
+            "Flash from macOS, or use the USB recovery image.",
+            file=sys.stderr,
+        )
+        return 1
     try:
         image = Path(args.firmware).expanduser() if args.firmware else _default_firmware_image()
         await _ensure_agent_running(args.state_path)
@@ -348,25 +395,25 @@ def _install_opencode_plugin(_: argparse.Namespace) -> int:
 
 
 def _service_install(args: argparse.Namespace) -> int:
-    _install_launchd_service(Path(args.state_path))
+    _install_agent_service(Path(args.state_path))
     store = BridgeStateStore(args.state_path)
     current = store.load()
     store.save(replace(current, service_installed=True))
-    print(f"Installed launchd service at {launchd_plist_path()}")
+    print(f"Installed background service at {_agent_service_location()}")
     return 0
 
 
 def _service_uninstall(args: argparse.Namespace) -> int:
-    uninstall_launchd_service(launchd_plist_path())
+    _uninstall_agent_service()
     store = BridgeStateStore(args.state_path)
     current = store.load()
     store.save(replace(current, service_installed=False))
-    print(f"Removed launchd service at {launchd_plist_path()}")
+    print(f"Removed background service at {_agent_service_location()}")
     return 0
 
 
 def _service_status(_: argparse.Namespace) -> int:
-    print(json.dumps(launchd_service_status(launchd_label()), indent=2, sort_keys=True))
+    print(json.dumps(_agent_service_status(), indent=2, sort_keys=True))
     return 0
 
 
@@ -379,10 +426,13 @@ def _doctor_payload(args: argparse.Namespace) -> dict[str, object]:
     state = BridgeStateStore(state_path).load()
     socket_path = default_socket_path(state_path)
     live = _agent_status(state_path)
-    launchd_status = launchd_service_status(launchd_label())
+    service_status = _agent_service_status()
     helper_app = state.helper_app_path
     helper_error = None
-    if helper_app:
+    if _is_windows():
+        # Windows uses the portable bleak backend; there is no native helper.
+        helper_app = None
+    elif helper_app:
         helper_path = Path(helper_app)
         if not (helper_path / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper").exists():
             helper_error = f"Helper bundle is missing or incomplete at {helper_path}"
@@ -399,7 +449,7 @@ def _doctor_payload(args: argparse.Namespace) -> dict[str, object]:
             replace(
                 state,
                 helper_app_path=str(helper_app or state.helper_app_path),
-                service_installed=state.service_installed and launchd_status["loaded"],
+                service_installed=state.service_installed and service_status["loaded"],
             )
         ),
         "paired_device_id": state.paired_device_id,
@@ -407,7 +457,8 @@ def _doctor_payload(args: argparse.Namespace) -> dict[str, object]:
         "agent_socket_path": str(socket_path),
         "agent_running": live is not None,
         "snapshot": live["state"]["snapshot"] if live is not None else state.snapshot,
-        "launchd": launchd_status,
+        "service": service_status,
+        "launchd": service_status,
         "native_helper_app": helper_app,
         "native_helper_error": helper_error,
         "opencode_plugin_path": str(plugin_path),
@@ -435,7 +486,8 @@ def _render_doctor(payload: dict[str, object]) -> str:
 
     lines.append(f"Device: {payload['paired_device_name'] or '-'} ({payload['paired_device_id'] or '-'})")
     lines.append(f"Agent: {'running' if payload['agent_running'] else 'not running'}")
-    lines.append(f"Launchd: {'loaded' if payload['launchd']['loaded'] else 'not loaded'}")
+    service_label = "Task Scheduler" if _is_windows() else "Launchd"
+    lines.append(f"{service_label}: {'loaded' if payload['launchd']['loaded'] else 'not loaded'}")
     lines.append(f"OpenCode plugin: {payload['opencode_plugin_path']}")
     lines.append(f"OpenCode server: {payload['opencode_server_url']}")
     if payload["native_helper_app"]:
@@ -481,7 +533,12 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
         problems.append(
             {
                 "problem": "The background agent is not installed or not loaded.",
-                "reason": "Launchd is not currently serving `com.opencodebuddy.agent`.",
+                "reason": (
+                    f"Task Scheduler is not currently serving "
+                    f"`{windows_service.windows_task_name()}`."
+                    if _is_windows()
+                    else "Launchd is not currently serving `com.opencodebuddy.agent`."
+                ),
                 "next": "Run `opencode-buddy repair` to reinstall the service.",
             }
         )
@@ -492,8 +549,13 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
             {
                 "problem": "The background agent is repeatedly exiting.",
                 "reason": (
-                    "Launchd is loaded, but the agent is not running "
+                    "The background service is loaded, but the agent is not running "
                     f"(last exit status: {status})."
+                    if _is_windows()
+                    else (
+                        "Launchd is loaded, but the agent is not running "
+                        f"(last exit status: {status})."
+                    )
                 ),
                 "next": "Run `opencode-buddy repair`; if it recurs, inspect the launchd error log.",
             }

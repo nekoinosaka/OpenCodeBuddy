@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import hmac
 import ipaddress
@@ -19,6 +18,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterator, Optional, Sequence, Tuple
 from urllib.parse import unquote, urlsplit
+
+from .platform_compat import fchmod, lock_file, unlock_file
 
 
 _SEMANTIC_VERSION = re.compile(
@@ -353,11 +354,11 @@ def _exclusive_build_lock(path: Path) -> Iterator[None]:
         except OSError as exc:
             raise RuntimeError(f"cannot safely open OTA release lock {path}") from exc
         try:
-            os.fchmod(descriptor, 0o600)
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            fchmod(descriptor, 0o600)
+            lock_file(descriptor, blocking=True)
             yield
         finally:
-            fcntl.flock(descriptor, fcntl.LOCK_UN)
+            unlock_file(descriptor)
             os.close(descriptor)
 
 

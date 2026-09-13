@@ -20,6 +20,7 @@ from typing import Callable, Dict, Iterable, Mapping, Optional
 
 from .ota_release import OtaRelease, cleanup_ota_release
 from .ota_trust import OtaTrustPaths
+from .platform_compat import fchmod
 from .runtime import ota_sessions_dir
 
 
@@ -138,7 +139,7 @@ def _create_private_file(path: Path) -> None:
         flags |= os.O_NOFOLLOW
     descriptor = os.open(path, flags, 0o600)
     try:
-        os.fchmod(descriptor, 0o600)
+        fchmod(descriptor, 0o600)
     finally:
         os.close(descriptor)
 

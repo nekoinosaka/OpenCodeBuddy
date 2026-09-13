@@ -23,6 +23,7 @@ from .agent_runtime import (
 )
 from .activity_heartbeat import ActivityHeartbeat
 from .ble_transport import BleBuddyTransport
+from .local_ipc import open_local_connection, start_local_server
 from .catalog import SessionCatalog, SessionPrompt, SessionRecord
 from .events import (
     AgentOutput,
@@ -83,7 +84,7 @@ class AgentClient:
 
     async def request(self, payload: dict[str, object]) -> dict[str, object]:
         try:
-            reader, writer = await asyncio.open_unix_connection(str(self.socket_path))
+            reader, writer = await open_local_connection(self.socket_path)
         except OSError as exc:
             raise AgentClientError(str(exc)) from exc
 
@@ -349,9 +350,9 @@ class BuddyAgent:
                 if self.socket_path.exists():
                     self.socket_path.unlink()
 
-                self._server = await asyncio.start_unix_server(
+                self._server = await start_local_server(
+                    self.socket_path,
                     self._handle_client,
-                    path=str(self.socket_path),
                 )
                 restrict_unix_socket(self.socket_path)
                 self._tasks = [
@@ -989,4 +990,14 @@ def spawn_agent_process(state_path: Path) -> None:
         str(state_path),
         "agent",
     ]
-    subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    kwargs: dict[str, object] = {
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+    if sys.platform.startswith("win"):
+        kwargs["creationflags"] = (
+            subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+        )
+    else:
+        kwargs["start_new_session"] = True
+    subprocess.Popen(command, **kwargs)

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import errno
 import contextlib
-import fcntl
 import os
 import socket
 import stat
@@ -11,6 +9,9 @@ import sys
 from pathlib import Path
 from pathlib import PurePath
 from typing import Iterable, Optional
+
+from .local_ipc import restrict_local_endpoint
+from .platform_compat import fchmod, lock_file, supports_dir_fd, unlock_file
 
 
 class AgentProcessLock:
@@ -41,13 +42,13 @@ class AgentProcessLock:
             metadata = os.fstat(descriptor)
             if not stat.S_ISREG(metadata.st_mode):
                 raise RuntimeError("buddy agent lock must be a regular file")
-            os.fchmod(descriptor, 0o600)
+            fchmod(descriptor, 0o600)
             try:
-                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                acquired = lock_file(descriptor, blocking=False)
             except OSError as exc:
-                if exc.errno in (errno.EACCES, errno.EAGAIN):
-                    raise RuntimeError("buddy agent is already running") from exc
                 raise RuntimeError("cannot acquire buddy agent lock") from exc
+            if not acquired:
+                raise RuntimeError("buddy agent is already running")
         except BaseException:
             os.close(descriptor)
             raise
@@ -59,7 +60,7 @@ class AgentProcessLock:
             return
         self._descriptor = None
         try:
-            fcntl.flock(descriptor, fcntl.LOCK_UN)
+            unlock_file(descriptor)
         finally:
             os.close(descriptor)
 
@@ -105,6 +106,9 @@ def ensure_private_runtime_root(path: Path) -> None:
     """Create or tighten a runtime root without following a symlink."""
 
     path = Path(path)
+    if not supports_dir_fd():
+        _ensure_private_runtime_root_portable(path)
+        return
     parent = _open_real_directory(path.parent)
     if parent is None:
         raise RuntimeError("buddy runtime parent must be a real directory")
@@ -127,23 +131,33 @@ def ensure_private_runtime_root(path: Path) -> None:
         opened = os.fstat(directory)
         if not stat.S_ISDIR(opened.st_mode):
             raise RuntimeError("buddy runtime root must be a real directory")
-        os.fchmod(directory, 0o700)
+        fchmod(directory, 0o700)
     finally:
         if directory is not None:
             os.close(directory)
         os.close(parent)
 
 
+def _ensure_private_runtime_root_portable(path: Path) -> None:
+    """Windows-friendly runtime-root check without dir_fd anchored traversal.
+
+    It cannot defend against a symlinked ancestor the way the POSIX path does,
+    but it still refuses to proceed when the runtime root itself is not a real
+    directory.
+    """
+
+    try:
+        path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError("buddy runtime root must be a real directory") from exc
+    if path.is_symlink() or not path.is_dir():
+        raise RuntimeError("buddy runtime root must be a real directory")
+
+
 def restrict_unix_socket(path: Path) -> None:
     """Limit a newly bound local control socket to its owner."""
 
-    try:
-        metadata = os.stat(path, follow_symlinks=False)
-    except OSError as exc:
-        raise RuntimeError("buddy agent socket is unavailable") from exc
-    if not stat.S_ISSOCK(metadata.st_mode):
-        raise RuntimeError("buddy agent socket must be a real Unix socket")
-    os.chmod(path, 0o600, follow_symlinks=False)
+    restrict_local_endpoint(path)
 
 
 def require_current_user_peer(
@@ -326,6 +340,12 @@ def cleanup_stale_ota_runtime(
     *, snapshots_root: Path, sessions_root: Path, releases_root: Path
 ) -> None:
     """Remove only structurally recognized crash residue from controlled OTA roots."""
+
+    if not supports_dir_fd():
+        # This hardening relies on dir_fd-anchored traversal that Windows does
+        # not provide. Firmware updates are unsupported on Windows in this
+        # build, so there is no OTA residue to reconcile.
+        return
 
     roots = [
         _open_real_directory(Path(snapshots_root)),

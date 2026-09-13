@@ -21,6 +21,7 @@ else:
     BleakClient = Any
 
 from .reducer import BuddySnapshot
+from .platform_compat import user_name
 from .runtime import helper_app_path as runtime_helper_app_path
 from .native_helper_build import build_bundled_native_helper
 
@@ -582,7 +583,7 @@ class BleBuddyTransport:
             if self._native_session.is_connected:
                 return
             await self._native_session.connect()
-            await self._native_session.write_json({"cmd": "owner", "name": os.environ.get("USER", "OpenCode")[:31]})
+            await self._native_session.write_json({"cmd": "owner", "name": user_name()[:31]})
             await self._native_session.write_json(self._time_sync_payload())
             return
 
@@ -593,7 +594,7 @@ class BleBuddyTransport:
         await self._client.connect()
         await self._client.start_notify(NUS_TX_UUID, self._handle_notification)
         await self._write_connected_json(
-            {"cmd": "owner", "name": os.environ.get("USER", "OpenCode")[:31]}
+            {"cmd": "owner", "name": user_name()[:31]}
         )
         await self._write_connected_json(self._time_sync_payload())
 

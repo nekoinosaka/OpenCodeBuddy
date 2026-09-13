@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 import tempfile
 import subprocess
 import uuid
@@ -17,6 +18,13 @@ from .ota_release import inspect_esp32s3_application_image
 from .state_store import PersistedState
 
 SETUP_VERSION = 1
+
+
+def requires_native_helper() -> bool:
+    """Only macOS needs the bundled CoreBluetooth helper; other platforms
+    use the portable ``bleak`` backend."""
+
+    return not sys.platform.startswith("win")
 
 
 def ensure_helper_app_installed(destination: Path | None = None) -> Path:
@@ -152,7 +160,9 @@ def is_setup_complete(state: PersistedState) -> bool:
         return False
     if not state.paired_device_id:
         return False
-    if not state.helper_app_path or not Path(state.helper_app_path).exists():
+    if requires_native_helper() and (
+        not state.helper_app_path or not Path(state.helper_app_path).exists()
+    ):
         return False
     if not opencode_plugin_path().is_file():
         return False

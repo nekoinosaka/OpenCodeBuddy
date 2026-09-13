@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import hmac
 import json
@@ -15,6 +14,7 @@ from pathlib import Path
 from typing import Callable, Iterator, Optional, Sequence, Tuple
 
 from . import runtime
+from .platform_compat import fchmod, lock_file, unlock_file
 
 
 @dataclass(frozen=True)
@@ -121,11 +121,11 @@ def _exclusive_file_lock(path: Path) -> Iterator[None]:
     except OSError as exc:
         raise RuntimeError(f"cannot safely open OTA lock {path}") from exc
     try:
-        os.fchmod(descriptor, 0o600)
-        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        fchmod(descriptor, 0o600)
+        lock_file(descriptor, blocking=True)
         yield
     finally:
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
+        unlock_file(descriptor)
         os.close(descriptor)
 
 
