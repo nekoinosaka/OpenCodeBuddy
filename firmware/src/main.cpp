@@ -74,6 +74,7 @@ bool    menuOpen    = false;
 uint8_t menuSel     = 0;
 uint8_t brightLevel = 4;           // 0..4 → ScreenBreath 20..100
 bool    btnALong    = false;
+bool    btnBLong    = false;
 
 enum DisplayMode { DISP_NORMAL, DISP_PET, DISP_INFO, DISP_COUNT };
 uint8_t displayMode = DISP_NORMAL;
@@ -81,6 +82,7 @@ uint8_t infoPage = 0;
 uint8_t petPage = 0;
 const uint8_t PET_PAGES = 2;
 char     lastPromptId[40] = "";
+char     lastQuestionId[48] = "";
 uint32_t lastInteractMs = 0;
 bool     dimmed = false;
 bool     screenOff = false;
@@ -1721,13 +1723,163 @@ void drawInfo() {
     ln("%s", about.hardware_line_2);
   }
 }
+static void buildQuestionHint(char* out, size_t outLen) {
+  if (outLen == 0) return;
+  out[0] = 0;
+  size_t used = 0;
+  if (tama.qText[0]) {
+    used += snprintf(out + used, outLen - used, "%s", tama.qText);
+  }
+  for (uint8_t i = 0; i < tama.qCount && used + 1 < outLen; ++i) {
+    used += snprintf(
+      out + used, outLen - used, "%s%s%s",
+      used ? "\n" : "", (i == tama.qSelected ? "> " : "  "), tama.qOptions[i]
+    );
+  }
+}
+
+static void sendQuestionAnswer() {
+  if (!tama.qId[0]) return;
+  const char* label = (tama.qCount && tama.qSelected < tama.qCount)
+      ? tama.qOptions[tama.qSelected] : "";
+  char cmd[512];
+  snprintf(
+    cmd, sizeof(cmd),
+    "{\"cmd\":\"question\",\"id\":\"%s\",\"answers\":[[\"%s\"]]}",
+    tama.qId, label
+  );
+  Serial.printf("[question] answer id=%s label=%s\n", tama.qId, label);
+  sendCmd(cmd);
+}
+
+static void sendQuestionReject() {
+  if (!tama.qId[0]) return;
+  char cmd[128];
+  snprintf(cmd, sizeof(cmd), "{\"cmd\":\"question\",\"id\":\"%s\",\"reject\":true}", tama.qId);
+  Serial.printf("[question] reject id=%s\n", tama.qId);
+  sendCmd(cmd);
+}
+
+static void drawQuestionPortrait() {
+  const Palette& p = characterPalette();
+  const int AREA = 88;
+  spr.fillRect(0, H - AREA, W, AREA, p.bg);
+  spr.drawFastHLine(0, H - AREA, W, p.textDim);
+  useDefaultTextFont(spr);
+  spr.setTextSize(1);
+  spr.setTextColor(p.textDim, p.bg);
+  spr.setCursor(4, H - AREA + 3);
+  uint32_t waited = (millis() - promptArrivedMs) / 1000;
+  if (waited >= 10) spr.setTextColor(HOT, p.bg);
+  spr.printf("choose? %lus", (unsigned long)waited);
+
+  char qLines[2][48] = {};
+  uint8_t qRows = utf8WrapInto(tama.qText, qLines, 2, 20, false);
+  spr.setTextColor(p.text, p.bg);
+  for (uint8_t i = 0; i < qRows; ++i) {
+    useUtf8FontForText(spr, qLines[i], &fonts::efontCN_12);
+    spr.setCursor(4, H - AREA + 15 + i * 12);
+    spr.print(qLines[i]);
+  }
+  useDefaultTextFont(spr);
+
+  const int ROW_Y = H - AREA + 42;
+  const int ROW_H = 11;
+  const uint8_t MAX_ROWS = 3;
+  uint8_t first = (tama.qSelected >= MAX_ROWS) ? (uint8_t)(tama.qSelected - MAX_ROWS + 1) : 0;
+  for (uint8_t i = first; i < tama.qCount && (uint8_t)(i - first) < MAX_ROWS; ++i) {
+    bool sel = (i == tama.qSelected);
+    int y = ROW_Y + (i - first) * ROW_H;
+    char line[40];
+    clipDisplayText(line, tama.qOptions[i], 18);
+    spr.setTextColor(sel ? GREEN : p.text, p.bg);
+    spr.setCursor(4, y);
+    spr.print(sel ? ">" : " ");
+    spr.setCursor(16, y);
+    spr.print(line);
+  }
+
+  const int FOOTER_Y = H - 12;
+  if (responseSent) {
+    spr.setTextColor(p.textDim, p.bg);
+    spr.setCursor(4, FOOTER_Y);
+    spr.print("sent...");
+  } else {
+    spr.setTextColor(GREEN, p.bg);
+    spr.setCursor(4, FOOTER_Y);
+    spr.print("A: ok");
+    spr.setTextColor(p.textDim, p.bg);
+    spr.setCursor(W - 52, FOOTER_Y);
+    spr.print("B: next");
+  }
+}
+
+static void drawQuestionLandscape(const Palette& p) {
+  const int LW = 240, LH = 135, AREA = 96;
+  M5.Lcd.fillRect(0, LH - AREA, LW, AREA, p.bg);
+  M5.Lcd.drawFastHLine(0, LH - AREA, LW, p.textDim);
+  useDefaultTextFont(M5.Lcd);
+  M5.Lcd.setTextSize(1);
+  M5.Lcd.setTextColor(p.textDim, p.bg);
+  M5.Lcd.setCursor(4, LH - AREA + 4);
+  uint32_t waited = (millis() - promptArrivedMs) / 1000;
+  if (waited >= 10) M5.Lcd.setTextColor(HOT, p.bg);
+  M5.Lcd.printf("choose? %lus", (unsigned long)waited);
+
+  char qLines[2][64] = {};
+  uint8_t qRows = utf8WrapInto(tama.qText, qLines, 2, 36, false);
+  M5.Lcd.setTextColor(p.text, p.bg);
+  for (uint8_t i = 0; i < qRows; ++i) {
+    useUtf8FontForText(M5.Lcd, qLines[i], &fonts::efontCN_12);
+    M5.Lcd.setCursor(4, LH - AREA + 18 + i * 12);
+    M5.Lcd.print(qLines[i]);
+  }
+  useDefaultTextFont(M5.Lcd);
+
+  const int ROW_Y = LH - AREA + 46;
+  const int ROW_H = 12;
+  const uint8_t MAX_ROWS = 3;
+  uint8_t first = (tama.qSelected >= MAX_ROWS) ? (uint8_t)(tama.qSelected - MAX_ROWS + 1) : 0;
+  for (uint8_t i = first; i < tama.qCount && (uint8_t)(i - first) < MAX_ROWS; ++i) {
+    bool sel = (i == tama.qSelected);
+    int y = ROW_Y + (i - first) * ROW_H;
+    char line[48];
+    clipDisplayText(line, tama.qOptions[i], 34);
+    M5.Lcd.setTextColor(sel ? GREEN : p.text, p.bg);
+    M5.Lcd.setCursor(4, y);
+    M5.Lcd.print(sel ? ">" : " ");
+    M5.Lcd.setCursor(16, y);
+    M5.Lcd.print(line);
+  }
+
+  const int FOOTER_Y = LH - 12;
+  if (responseSent) {
+    M5.Lcd.setTextColor(p.textDim, p.bg);
+    M5.Lcd.setCursor(4, FOOTER_Y);
+    M5.Lcd.print("sent...");
+  } else {
+    M5.Lcd.setTextColor(GREEN, p.bg);
+    M5.Lcd.setCursor(4, FOOTER_Y);
+    M5.Lcd.print("A: ok");
+    M5.Lcd.setTextColor(p.textDim, p.bg);
+    M5.Lcd.setCursor(LW - 52, FOOTER_Y);
+    M5.Lcd.print("B: next");
+  }
+}
+
 static void drawApproval() {
+  if (tama.qId[0]) { drawQuestionPortrait(); return; }
   const Palette& p = characterPalette();
   const int AREA = 84;
   const PortraitApprovalLayout layout = portraitApprovalLayout(
     usageMeterBottomInset()
   );
   const int FOOTER_Y = layout.footerY;
+  const bool isQuestion = tama.qId[0] != 0;
+  const char* toolSource = isQuestion ? tama.qHeader : tama.promptTool;
+  char qHint[256] = "";
+  if (isQuestion) buildQuestionHint(qHint, sizeof(qHint));
+  const char* hintSource = isQuestion ? qHint : tama.promptHint;
   spr.fillRect(0, H - AREA, W, AREA, p.bg);
   spr.drawFastHLine(0, H - AREA, W, p.textDim);
 
@@ -1737,12 +1889,12 @@ static void drawApproval() {
   spr.setCursor(4, H - AREA + 4);
   uint32_t waited = (millis() - promptArrivedMs) / 1000;
   if (waited >= 10) spr.setTextColor(HOT, p.bg);
-  spr.printf("approve? %lus", (unsigned long)waited);
+  spr.printf(isQuestion ? "choose? %lus" : "approve? %lus", (unsigned long)waited);
 
   char toolLine[48];
-  bool toolUtf8 = utf8ContainsNonAscii(tama.promptTool);
-  uint16_t toolCells = utf8DisplayCells(tama.promptTool);
-  clipDisplayText(toolLine, tama.promptTool, toolUtf8 ? 14 : (toolCells <= 10 ? 10 : 20));
+  bool toolUtf8 = utf8ContainsNonAscii(toolSource);
+  uint16_t toolCells = utf8DisplayCells(toolSource);
+  clipDisplayText(toolLine, toolSource, toolUtf8 ? 14 : (toolCells <= 10 ? 10 : 20));
   spr.setTextColor(p.text, p.bg);
   if (toolUtf8) {
     spr.setFont(&fonts::efontCN_12);
@@ -1758,7 +1910,7 @@ static void drawApproval() {
 
   // Hint wraps by display cells so multi-byte UTF-8 never gets split.
   char hintLines[8][48] = {};
-  uint8_t hintRows = utf8WrapInto(tama.promptHint, hintLines, 8, 20, false);
+  uint8_t hintRows = utf8WrapInto(hintSource, hintLines, 8, 20, false);
   uint8_t hintBack = (hintRows > layout.maxHintRows)
       ? (hintRows - layout.maxHintRows)
       : 0;
@@ -1775,6 +1927,13 @@ static void drawApproval() {
     spr.setTextColor(p.textDim, p.bg);
     spr.setCursor(4, FOOTER_Y);
     spr.print("sent...");
+  } else if (isQuestion) {
+    spr.setTextColor(GREEN, p.bg);
+    spr.setCursor(4, FOOTER_Y);
+    spr.print("A: ok");
+    spr.setTextColor(p.textDim, p.bg);
+    spr.setCursor(W - 52, FOOTER_Y);
+    spr.print("B: next");
   } else {
     spr.setTextColor(GREEN, p.bg);
     spr.setCursor(4, FOOTER_Y);
@@ -1974,8 +2133,14 @@ static uint8_t runtimePromptScrollOffset(uint32_t now) {
 }
 
 static void drawLandscapeApproval(const Palette& p, uint8_t hintOffset) {
+  if (tama.qId[0]) { drawQuestionLandscape(p); return; }
   const int LW = 240, LH = 135, AREA = 88;
   const int FOOTER_Y = landscapeApprovalFooterY(LH, usageMeterBottomInset());
+  const bool isQuestion = tama.qId[0] != 0;
+  const char* toolSource = isQuestion ? tama.qHeader : tama.promptTool;
+  char qHint[256] = "";
+  if (isQuestion) buildQuestionHint(qHint, sizeof(qHint));
+  const char* hintSource = isQuestion ? qHint : tama.promptHint;
   M5.Lcd.fillRect(0, LH - AREA, LW, AREA, p.bg);
   M5.Lcd.drawFastHLine(0, LH - AREA, LW, p.textDim);
 
@@ -1985,10 +2150,10 @@ static void drawLandscapeApproval(const Palette& p, uint8_t hintOffset) {
   M5.Lcd.setCursor(4, LH - AREA + 4);
   uint32_t waited = (millis() - promptArrivedMs) / 1000;
   if (waited >= 10) M5.Lcd.setTextColor(HOT, p.bg);
-  M5.Lcd.printf("approve? %lus", (unsigned long)waited);
+  M5.Lcd.printf(isQuestion ? "choose? %lus" : "approve? %lus", (unsigned long)waited);
 
   char toolLine[48];
-  clipDisplayText(toolLine, tama.promptTool, utf8ContainsNonAscii(tama.promptTool) ? 24 : 32);
+  clipDisplayText(toolLine, toolSource, utf8ContainsNonAscii(toolSource) ? 24 : 32);
   useUtf8FontForText(M5.Lcd, toolLine, &fonts::efontCN_12);
   M5.Lcd.setTextColor(p.text, p.bg);
   M5.Lcd.setCursor(4, LH - AREA + 18);
@@ -1996,7 +2161,7 @@ static void drawLandscapeApproval(const Palette& p, uint8_t hintOffset) {
   useDefaultTextFont(M5.Lcd);
 
   char hintLines[8][48] = {};
-  uint8_t hintRows = utf8WrapInto(tama.promptHint, hintLines, 8, 36, false);
+  uint8_t hintRows = utf8WrapInto(hintSource, hintLines, 8, 36, false);
   M5.Lcd.setTextColor(p.textDim, p.bg);
   for (uint8_t i = 0; i < 2 && (hintOffset + i) < hintRows; ++i) {
     useUtf8FontForText(M5.Lcd, hintLines[hintOffset + i], &fonts::efontCN_12);
@@ -2009,6 +2174,13 @@ static void drawLandscapeApproval(const Palette& p, uint8_t hintOffset) {
     M5.Lcd.setTextColor(p.textDim, p.bg);
     M5.Lcd.setCursor(4, FOOTER_Y);
     M5.Lcd.print("sent...");
+  } else if (isQuestion) {
+    M5.Lcd.setTextColor(GREEN, p.bg);
+    M5.Lcd.setCursor(4, FOOTER_Y);
+    M5.Lcd.print("A: ok");
+    M5.Lcd.setTextColor(p.textDim, p.bg);
+    M5.Lcd.setCursor(LW - 52, FOOTER_Y);
+    M5.Lcd.print("B: next");
   } else {
     M5.Lcd.setTextColor(GREEN, p.bg);
     M5.Lcd.setCursor(4, FOOTER_Y);
@@ -2267,14 +2439,18 @@ void loop() {
 
   // BtnA: step through fake scenarios
   // Prompt arrival: beep, reset response flag
-  if (strcmp(tama.promptId, lastPromptId) != 0) {
+  bool promptChanged = strcmp(tama.promptId, lastPromptId) != 0;
+  bool questionChanged = strcmp(tama.qId, lastQuestionId) != 0;
+  if (promptChanged || questionChanged) {
     strncpy(lastPromptId, tama.promptId, sizeof(lastPromptId)-1);
     lastPromptId[sizeof(lastPromptId)-1] = 0;
+    strncpy(lastQuestionId, tama.qId, sizeof(lastQuestionId)-1);
+    lastQuestionId[sizeof(lastQuestionId)-1] = 0;
     responseSent = false;
-    if (tama.promptId[0]) {
+    if (tama.promptId[0] || tama.qId[0]) {
       Serial.printf(
         "[prompt] show id=%s tool=%s mode=%u\n",
-        tama.promptId, tama.promptTool, displayMode
+        tama.promptId[0] ? tama.promptId : tama.qId, tama.promptTool, displayMode
       );
       promptArrivedMs = millis();
       napping = false;
@@ -2293,7 +2469,7 @@ void loop() {
     }
   }
 
-  bool inPrompt = tama.promptId[0] && !responseSent;
+  bool inPrompt = (tama.promptId[0] || tama.qId[0]) && !responseSent;
   wifiManagerPoll(inPrompt);
   OtaOfferPolicy incomingOtaPolicy = otaOfferPolicy(
     tama.otaOffer.pending,
@@ -2430,7 +2606,15 @@ void loop() {
   if (M5.BtnA.pressedFor(600) && !btnALong && !swallowBtnA) {
     btnALong = true;
     beep(800, 60);
-    if (otaCompactOverlay) {
+    if (inPrompt && tama.promptId[0]) {
+      // Long-press A on a permission prompt: approve and remember (always).
+      char cmd[96];
+      snprintf(cmd, sizeof(cmd), "{\"cmd\":\"permission\",\"id\":\"%s\",\"decision\":\"always\"}", tama.promptId);
+      Serial.printf("[prompt] always id=%s\n", tama.promptId);
+      sendCmd(cmd);
+      responseSent = true;
+      beep(2400, 60);
+    } else if (otaCompactOverlay) {
       if (otaUpdateView().cancellable) otaUpdateCancel();
     }
     else if (otaReceiveScreen) {
@@ -2464,9 +2648,25 @@ void loop() {
     }
     Serial.println(menuOpen ? "menu open" : "menu close");
   }
+
+  // BtnB long-press rejects an active question.
+  if (tama.qId[0] && inPrompt && M5.BtnB.pressedFor(600) && !btnBLong && !swallowBtnB) {
+    btnBLong = true;
+    sendQuestionReject();
+    responseSent = true;
+    beep(600, 60);
+  }
+  if (M5.BtnB.wasReleased()) {
+    btnBLong = false;
+  }
+
   if (M5.BtnA.wasReleased()) {
     if (!btnALong && !swallowBtnA) {
-      if (inPrompt) {
+      if (inPrompt && tama.qId[0]) {
+        sendQuestionAnswer();
+        responseSent = true;
+        beep(2400, 60);
+      } else if (inPrompt) {
         char cmd[96];
         snprintf(cmd, sizeof(cmd), "{\"cmd\":\"permission\",\"id\":\"%s\",\"decision\":\"once\"}", tama.promptId);
         Serial.printf("[prompt] approve id=%s\n", tama.promptId);
@@ -2513,7 +2713,12 @@ void loop() {
   if (M5.BtnB.wasPressed()) {
     if (swallowBtnB) { swallowBtnB = false; }
     else
-    if (inPrompt) {
+    if (inPrompt && tama.qId[0]) {
+      if (tama.qCount) {
+        tama.qSelected = (uint8_t)((tama.qSelected + 1) % tama.qCount);
+        beep(1800, 20);
+      }
+    } else if (inPrompt) {
       char cmd[96];
       snprintf(cmd, sizeof(cmd), "{\"cmd\":\"permission\",\"id\":\"%s\",\"decision\":\"deny\"}", tama.promptId);
       Serial.printf("[prompt] deny id=%s\n", tama.promptId);

@@ -28,6 +28,7 @@ from .events import (
     AgentOutput,
     ApprovalRequest,
     ApprovalRequestResolved,
+    QuestionResolved,
     TokenUsage,
     TurnState,
 )
@@ -236,6 +237,8 @@ class BuddyAgent:
         self._opencode_permission_timeout = opencode_permission_timeout
         self._opencode_connect_wait = opencode_connect_wait
         self._opencode_permission_waiters: dict[str, asyncio.Future[str]] = {}
+        self._opencode_question_waiters: dict[str, asyncio.Future[dict[str, object]]] = {}
+        self._active_question: Optional[dict[str, object]] = None
         self._tasks: list[asyncio.Task[None]] = []
         self._server: Optional[asyncio.AbstractServer] = None
         self._stopped: Optional[asyncio.Event] = None
@@ -413,6 +416,11 @@ class BuddyAgent:
             if not waiter.done():
                 waiter.cancel()
         self._opencode_permission_waiters.clear()
+        for waiter in list(self._opencode_question_waiters.values()):
+            if not waiter.done():
+                waiter.cancel()
+        self._opencode_question_waiters.clear()
+        self._active_question = None
         self._opencode_runtime.clear()
         if self._ble is not None:
             with contextlib.suppress(Exception):
@@ -477,6 +485,8 @@ class BuddyAgent:
             return await self._opencode_notify(payload)
         if command == "permission_ask":
             return await self._opencode_permission_ask(payload)
+        if command == "question_ask":
+            return await self._opencode_question_ask(payload)
         if command == "ota_begin":
             return await self._begin_ota_update(payload)
         if command == "ota_status":
@@ -621,6 +631,7 @@ class BuddyAgent:
                     paired_device_id,
                     device_name=paired_device_name,
                     on_permission=self._handle_device_permission,
+                    on_question=self._handle_device_question,
                 )
                 self._ble_connected = False
             if self._ble_connected and not getattr(self._ble, "is_connected", True):
@@ -736,6 +747,9 @@ class BuddyAgent:
         if isinstance(event, ApprovalRequestResolved):
             await self._resolve_opencode_permission(event.request_id)
             return
+        if isinstance(event, QuestionResolved):
+            await self._resolve_opencode_question(event.request_id)
+            return
         session_id = getattr(event, "thread_id", None)
         if not session_id:
             return
@@ -777,6 +791,86 @@ class BuddyAgent:
             return
         waiter.set_result(decision if decision in {"once", "deny", "always"} else "once")
 
+    async def _opencode_question_ask(self, payload: dict[str, object]) -> dict[str, object]:
+        request_id = str(payload.get("request_id", ""))
+        options_raw = payload.get("options")
+        options = (
+            [str(option) for option in options_raw]
+            if isinstance(options_raw, list)
+            else []
+        )
+        if not request_id or not options:
+            return {"ok": True, "decision": "ask"}
+        if not self._ble_connected or self._ble is None:
+            deadline = time.monotonic() + self._opencode_connect_wait
+            while (
+                not self._ble_connected or self._ble is None
+            ) and time.monotonic() < deadline:
+                await asyncio.sleep(0.1)
+        if not self._ble_connected or self._ble is None:
+            return {"ok": True, "decision": "ask"}
+        index = int(payload.get("index", 0) or 0)
+        total = int(payload.get("total", 1) or 1)
+        device_id = request_id if total <= 1 else "{}#{}".format(request_id, index)
+        self._active_question = {
+            "id": device_id,
+            "header": clip_text_by_width(
+                str(payload.get("header", "") or ""), 30, ellipsis="…"
+            ),
+            "text": clip_text_by_width(
+                str(payload.get("question", "") or ""), 120, ellipsis="…"
+            ),
+            "options": [
+                clip_text_by_width(option, 28, ellipsis="…") for option in options[:6]
+            ],
+            "multiple": bool(payload.get("multiple")),
+            "index": index,
+            "total": total,
+        }
+        waiter: asyncio.Future[dict[str, object]] = asyncio.get_running_loop().create_future()
+        self._opencode_question_waiters[device_id] = waiter
+        try:
+            result = await asyncio.wait_for(
+                waiter, timeout=self._opencode_permission_timeout
+            )
+        except asyncio.TimeoutError:
+            result = {"decision": "ask"}
+        finally:
+            self._opencode_question_waiters.pop(device_id, None)
+            if (
+                self._active_question is not None
+                and self._active_question.get("id") == device_id
+            ):
+                self._active_question = None
+            await self._publish_state()
+        if result.get("reject"):
+            return {"ok": True, "reject": True}
+        if result.get("decision") == "ask":
+            return {"ok": True, "decision": "ask"}
+        answers = result.get("answers")
+        return {"ok": True, "answers": answers if isinstance(answers, list) else []}
+
+    async def _handle_device_question(
+        self, device_id: str, answers: list, reject: bool
+    ) -> None:
+        waiter = self._opencode_question_waiters.get(str(device_id))
+        if waiter is None or waiter.done():
+            return
+        if reject:
+            waiter.set_result({"reject": True})
+        else:
+            waiter.set_result({"answers": [str(answer) for answer in answers]})
+
+    async def _resolve_opencode_question(self, request_id: str) -> None:
+        prefix = "{}#".format(request_id)
+        for device_id in list(self._opencode_question_waiters):
+            if device_id != request_id and not device_id.startswith(prefix):
+                continue
+            waiter = self._opencode_question_waiters.get(device_id)
+            if waiter is not None and not waiter.done():
+                waiter.set_result({"decision": "ask"})
+        await self._publish_state()
+
     async def _publish_state(self, *, force: bool = False) -> None:
         snapshot = self._snapshot()
         payload = snapshot.as_ble_payload()
@@ -814,6 +908,7 @@ class BuddyAgent:
         self._token_heartbeat.retain_sessions(session_ids)
         return replace(
             self.catalog.snapshot(now=now),
+            question=dict(self._active_question) if self._active_question else None,
             completion_seq=self._completion_seq,
             activity20=self._activity_heartbeat.mask(now),
             token20v1=(

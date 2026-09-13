@@ -30,6 +30,7 @@ class _FakeNativeSession:
         self.disconnected = False
         self.writes: list[dict] = []
         self.on_permission = None
+        self.on_question = None
         self.notifications = None
 
     @property
@@ -83,10 +84,11 @@ def test_ble_transport_uses_write_with_response_for_snapshot_payloads():
 def test_ble_transport_native_helper_connect_sends_owner_and_time_sync():
     fake = _FakeNativeSession()
 
-    def factory(*, device_id: str, device_name: str, on_permission):
+    def factory(*, device_id: str, device_name: str, on_permission, on_question=None):
         assert device_id == "device-1"
         assert device_name == "OpenCode-1234"
         fake.on_permission = on_permission
+        fake.on_question = on_question
         return fake
 
     previous_user = os.environ.get("USER")
@@ -162,10 +164,11 @@ def test_ble_transport_native_helper_forwards_permission_events():
     async def on_permission(request_id: str, decision: str) -> None:
         approvals.append((request_id, decision))
 
-    def factory(*, device_id: str, device_name: str, on_permission):
+    def factory(*, device_id: str, device_name: str, on_permission, on_question=None):
         assert device_id == "device-1"
         assert device_name == "OpenCode-1234"
         fake.on_permission = on_permission
+        fake.on_question = on_question
         return fake
 
     transport = BleBuddyTransport(
@@ -215,8 +218,9 @@ def test_ble_transport_sends_and_receives_application_json_without_regressing_pe
     async def on_permission(request_id: str, decision: str) -> None:
         approvals.append((request_id, decision))
 
-    def factory(*, device_id: str, device_name: str, on_permission):
+    def factory(*, device_id: str, device_name: str, on_permission, on_question=None):
         fake.on_permission = on_permission
+        fake.on_question = on_question
         return fake
 
     async def exercise():

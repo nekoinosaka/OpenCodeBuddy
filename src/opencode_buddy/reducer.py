@@ -32,6 +32,7 @@ class BuddySnapshot:
     tokens: int
     tokens_today: int
     prompt: Optional[dict[str, str]]
+    question: Optional[dict] = None
     completion_seq: Optional[int] = None
     activity20: Optional[int] = None
     token20v1: Optional[str] = None
@@ -48,6 +49,8 @@ class BuddySnapshot:
         }
         if self.prompt is not None:
             payload["prompt"] = dict(self.prompt)
+        if self.question is not None:
+            payload["question"] = dict(self.question)
         if self.completion_seq is not None:
             payload["completion_seq"] = self.completion_seq
         if self.activity20 is not None:

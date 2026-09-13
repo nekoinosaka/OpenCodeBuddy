@@ -41,3 +41,8 @@ class ApprovalRequest:
 @dataclass(frozen=True)
 class ApprovalRequestResolved:
     request_id: str
+
+
+@dataclass(frozen=True)
+class QuestionResolved:
+    request_id: str

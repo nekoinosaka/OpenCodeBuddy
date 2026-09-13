@@ -26,6 +26,13 @@ def _permission_payload(request_id="per-1", session_id="ses-1"):
     }
 
 
+async def _wait_for_question(agent) -> None:
+    for _ in range(200):
+        if agent._opencode_question_waiters:
+            return
+        await asyncio.sleep(0.01)
+
+
 async def _wait_for_waiter(agent) -> None:
     for _ in range(200):
         if agent._opencode_permission_waiters:
@@ -275,3 +282,85 @@ def test_snapshot_prunes_stale_session_runtime(tmp_path):
     agent = asyncio.run(exercise())
 
     assert agent._opencode_runtime == {}
+
+
+def test_question_ask_returns_device_selection(tmp_path):
+    async def exercise():
+        agent = BuddyAgent(
+            tmp_path / "state.json", clock=lambda: 100.0, opencode_permission_timeout=5.0
+        )
+        agent._ble = _CapturingBle()
+        agent._ble_connected = True
+        task = asyncio.create_task(
+            agent._handle_command(
+                {
+                    "cmd": "question_ask",
+                    "request_id": "que-1",
+                    "sessionID": "ses-1",
+                    "index": 0,
+                    "total": 1,
+                    "header": "Snack",
+                    "question": "Pick a snack",
+                    "options": ["Apple", "Chips", "Cookie"],
+                    "multiple": False,
+                }
+            )
+        )
+        await _wait_for_question(agent)
+        showing = agent._snapshot()
+        await agent._handle_device_question("que-1", ["Chips"], False)
+        response = await task
+        return response, showing, agent._snapshot()
+
+    response, showing, resolved = asyncio.run(exercise())
+
+    assert response == {"ok": True, "answers": ["Chips"]}
+    assert showing.question["options"] == ["Apple", "Chips", "Cookie"]
+    assert showing.question["text"] == "Pick a snack"
+    assert resolved.question is None
+
+
+def test_question_ask_reject(tmp_path):
+    async def exercise():
+        agent = BuddyAgent(
+            tmp_path / "state.json", clock=lambda: 100.0, opencode_permission_timeout=5.0
+        )
+        agent._ble = _CapturingBle()
+        agent._ble_connected = True
+        task = asyncio.create_task(
+            agent._handle_command(
+                {
+                    "cmd": "question_ask",
+                    "request_id": "que-2",
+                    "sessionID": "ses-1",
+                    "header": "Snack",
+                    "question": "Pick",
+                    "options": ["A", "B"],
+                }
+            )
+        )
+        await _wait_for_question(agent)
+        await agent._handle_device_question("que-2", [], True)
+        return await task
+
+    assert asyncio.run(exercise()) == {"ok": True, "reject": True}
+
+
+def test_question_ask_without_ble_falls_back(tmp_path):
+    async def exercise():
+        agent = BuddyAgent(
+            tmp_path / "state.json", clock=lambda: 100.0, opencode_connect_wait=0.0
+        )
+        agent._ble_connected = False
+        return await agent._handle_command(
+            {
+                "cmd": "question_ask",
+                "request_id": "que-3",
+                "sessionID": "ses-1",
+                "header": "Snack",
+                "question": "Pick",
+                "options": ["A", "B"],
+            }
+        )
+
+    assert asyncio.run(exercise()) == {"ok": True, "decision": "ask"}

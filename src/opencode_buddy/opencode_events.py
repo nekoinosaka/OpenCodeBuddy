@@ -7,6 +7,7 @@ from .events import (
     AgentOutput,
     ApprovalRequest,
     ApprovalRequestResolved,
+    QuestionResolved,
     TokenUsage,
     TurnState,
 )
@@ -71,6 +72,8 @@ class OpenCodeEventAdapter:
             return self._permission_updated(properties)
         if kind == "permission.replied":
             return self._permission_replied(properties)
+        if kind in {"question.replied", "question.rejected"}:
+            return self._question_resolved(properties)
         if kind == "session.error":
             return self._session_error(properties)
         return []
@@ -200,18 +203,19 @@ class OpenCodeEventAdapter:
         session_id = str(properties.get("sessionID", ""))
         if not request_id or not session_id:
             return []
-        tool = str(properties.get("type", "tool") or "tool")
-        title = properties.get("title")
-        pattern = properties.get("pattern")
-        hint = str(title) if isinstance(title, str) and title else ""
-        if not hint and isinstance(pattern, str) and pattern:
-            hint = pattern
-        if not hint:
-            hint = tool
+        tool = str(
+            properties.get("permission") or properties.get("type") or "tool"
+        )
+        tool_object = properties.get("tool")
+        if isinstance(tool_object, dict):
+            turn_id = str(tool_object.get("callID", "") or "")
+        else:
+            turn_id = str(properties.get("callID", "") or "")
+        hint = _permission_hint(properties)
         return [
             ApprovalRequest(
                 thread_id=session_id,
-                turn_id=str(properties.get("callID", "") or ""),
+                turn_id=turn_id,
                 request_id=request_id,
                 command=hint,
                 cwd="",
@@ -227,6 +231,12 @@ class OpenCodeEventAdapter:
             return []
         return [ApprovalRequestResolved(request_id=request_id)]
 
+    def _question_resolved(self, properties: dict) -> list[object]:
+        request_id = str(properties.get("requestID", ""))
+        if not request_id:
+            return []
+        return [QuestionResolved(request_id=request_id)]
+
     def _session_error(self, properties: dict) -> list[object]:
         session_id = str(properties.get("sessionID", ""))
         error = properties.get("error")
@@ -236,6 +246,59 @@ class OpenCodeEventAdapter:
         if not message:
             return []
         return [AgentOutput(thread_id=session_id, text=message)]
+
+
+_PERMISSION_META_KEYS = (
+    "command",
+    "commandText",
+    "filePath",
+    "filepath",
+    "filepaths",
+    "filePaths",
+    "path",
+    "paths",
+    "file",
+    "files",
+    "directories",
+    "patterns",
+    "pattern",
+    "query",
+    "url",
+    "glob",
+)
+
+
+def _permission_hint(properties: dict) -> str:
+    metadata = properties.get("metadata")
+    if isinstance(metadata, dict):
+        for key in _PERMISSION_META_KEYS:
+            hint = _stringify_hint(metadata.get(key))
+            if hint:
+                return hint
+        for value in metadata.values():
+            hint = _stringify_hint(value)
+            if hint:
+                return hint
+    title = properties.get("title")
+    if isinstance(title, str) and title.strip():
+        return title.strip()
+    for key in ("patterns", "pattern"):
+        hint = _stringify_hint(properties.get(key))
+        if hint:
+            return hint
+    return str(
+        properties.get("permission") or properties.get("type") or "tool"
+    )
+
+
+def _stringify_hint(value: object) -> str:
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    if isinstance(value, list):
+        parts = [str(item).strip() for item in value if isinstance(item, str) and item.strip()]
+        if parts:
+            return ", ".join(parts)
+    return ""
 
 
 def _error_message(error: dict) -> str:

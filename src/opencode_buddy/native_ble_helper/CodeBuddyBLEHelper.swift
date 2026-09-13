@@ -347,6 +347,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CBCentralManagerDelega
             return
         }
 
+        if cmd == "question" {
+            emit([
+                "event": "question",
+                "id": object["id"] as? String ?? "",
+                "answers": object["answers"] as? [[String]] ?? [],
+                "reject": object["reject"] as? Bool ?? false,
+            ])
+            return
+        }
+
         emit([
             "event": "notification",
             "line": String(decoding: lineData, as: UTF8.self),

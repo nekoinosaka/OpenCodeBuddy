@@ -15,6 +15,8 @@ const FORWARDED_EVENTS = new Set([
   "message.part.updated",
   "permission.updated",
   "permission.replied",
+  "question.replied",
+  "question.rejected",
 ])
 
 function request(payload, timeoutMs) {
@@ -129,12 +131,6 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
         () => client.permission.reply({ requestID: permission.id, reply, directory: dir }),
       ])
     }
-    if (attempts.length === 0) {
-      await log("warn", "no permission reply method on client", {
-        permission: Object.keys(client?.permission ?? {}).sort().join(","),
-      })
-      return null
-    }
     for (const [name, attempt] of attempts) {
       try {
         const result = await attempt()
@@ -150,24 +146,75 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
     return null
   }
 
+  const answered = (result) => !(result && typeof result === "object" && result.error)
+
+  const answerQuestion = async (requestId, answers) => {
+    const dir = directory || undefined
+    if (typeof client?.question?.reply === "function") {
+      try {
+        const result = await client.question.reply({
+          requestID: requestId,
+          answers,
+          directory: dir,
+        })
+        if (answered(result)) return "question.reply"
+        await log("warn", "question reply rejected", { error: String(result.error) })
+      } catch (error) {
+        await log("warn", "question reply failed", { error: String(error) })
+      }
+    }
+    if (typeof client?._client?.post === "function") {
+      try {
+        const result = await client._client.post({
+          url: "/question/{requestID}/reply",
+          path: { requestID: requestId },
+          body: { answers },
+          ...(dir ? { query: { directory: dir } } : {}),
+        })
+        if (answered(result)) return "question.reply(low)"
+        await log("warn", "question reply(low) rejected", { error: String(result.error ?? result) })
+      } catch (error) {
+        await log("warn", "question reply(low) failed", { error: String(error) })
+      }
+    }
+    return null
+  }
+
+  const rejectQuestion = async (requestId) => {
+    const dir = directory || undefined
+    if (typeof client?.question?.reject === "function") {
+      try {
+        const result = await client.question.reject({ requestID: requestId, directory: dir })
+        if (answered(result)) return "question.reject"
+      } catch (error) {
+        await log("warn", "question reject failed", { error: String(error) })
+      }
+    }
+    if (typeof client?._client?.post === "function") {
+      try {
+        const result = await client._client.post({
+          url: "/question/{requestID}/reject",
+          path: { requestID: requestId },
+          ...(dir ? { query: { directory: dir } } : {}),
+        })
+        if (answered(result)) return "question.reject(low)"
+      } catch (error) {
+        await log("warn", "question reject(low) failed", { error: String(error) })
+      }
+    }
+    return null
+  }
+
   const permissionQueue = []
   let drainingPermissions = false
-
   const drainPermissions = async () => {
     if (drainingPermissions) return
     drainingPermissions = true
     try {
       while (permissionQueue.length > 0) {
         const permission = permissionQueue.shift()
-        const response = await request(
-          { cmd: "permission_ask", permission },
-          65000,
-        )
-        const method = await replyToOpenCode(
-          permission,
-          response?.decision,
-          response?.directory,
-        )
+        const response = await request({ cmd: "permission_ask", permission }, 65000)
+        const method = await replyToOpenCode(permission, response?.decision, response?.directory)
         await log("info", "permission decision", {
           id: permission.id,
           decision: response?.decision ?? "ask",
@@ -177,6 +224,61 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
       }
     } finally {
       drainingPermissions = false
+    }
+  }
+
+  const questionQueue = []
+  let drainingQuestions = false
+  const drainQuestions = async () => {
+    if (drainingQuestions) return
+    drainingQuestions = true
+    try {
+      while (questionQueue.length > 0) {
+        const pending = questionQueue.shift()
+        const questions = Array.isArray(pending.questions) ? pending.questions : []
+        const collected = []
+        let outcome = "reply"
+        for (let i = 0; i < questions.length; i += 1) {
+          const info = questions[i] || {}
+          const options = (Array.isArray(info.options) ? info.options : [])
+            .map((option) => (option && typeof option === "object" ? option.label : option))
+            .filter((label) => typeof label === "string" && label)
+          const response = await request(
+            {
+              cmd: "question_ask",
+              request_id: pending.id,
+              sessionID: pending.sessionID,
+              index: i,
+              total: questions.length,
+              header: info.header || "",
+              question: info.question || "",
+              options,
+              multiple: Boolean(info.multiple),
+            },
+            65000,
+          )
+          if (!response || response.decision === "ask") {
+            outcome = "fallback"
+            break
+          }
+          if (response.reject) {
+            outcome = "reject"
+            break
+          }
+          collected.push(Array.isArray(response.answers) ? response.answers : [])
+        }
+        if (outcome === "reply" && collected.length === questions.length) {
+          const method = await answerQuestion(pending.id, collected)
+          await log("info", "question answered", { id: pending.id, delivered: method != null, method: method || "" })
+        } else if (outcome === "reject") {
+          const method = await rejectQuestion(pending.id)
+          await log("info", "question rejected", { id: pending.id, delivered: method != null })
+        } else {
+          await log("info", "question left to terminal", { id: pending.id })
+        }
+      }
+    } finally {
+      drainingQuestions = false
     }
   }
 
@@ -193,6 +295,7 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
     await log("info", "Code Buddy client surface", {
       top: Object.keys(client ?? {}).sort().join(","),
       permission: Object.keys(client?.permission ?? {}).sort().join(","),
+      question: Object.keys(client?.question ?? {}).sort().join(","),
     })
   } catch {}
 
@@ -202,10 +305,18 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
         const permission = event.properties || {}
         void log("info", "permission.asked queued", {
           id: permission.id,
-          tool: permission.type,
+          tool: permission.permission ?? permission.type ?? "",
+          json: JSON.stringify(permission).slice(0, 700),
         })
         permissionQueue.push(permission)
         void drainPermissions()
+        return
+      }
+      if (event?.type === "question.asked") {
+        const request = event.properties || {}
+        void log("info", "question.asked queued", { id: request.id })
+        questionQueue.push(request)
+        void drainQuestions()
         return
       }
       if (!worthForwarding(event)) return

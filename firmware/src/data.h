@@ -43,6 +43,13 @@ struct TamaState {
   char     promptId[40];     // pending permission request ID; empty = no prompt
   char     promptTool[96];
   char     promptHint[256];
+  char     qId[48];          // pending question request ID; empty = no question
+  char     qHeader[40];
+  char     qText[200];
+  char     qOptions[6][32];
+  uint8_t  qCount;
+  bool     qMultiple;
+  uint8_t  qSelected;        // highlighted option index (device-side)
   OtaOfferState otaOffer;
 };
 
@@ -349,11 +356,40 @@ static void _applyJson(const char* line, TamaState* out, bool trustedTransport) 
   } else {
     out->promptId[0] = 0; out->promptTool[0] = 0; out->promptHint[0] = 0;
   }
+  JsonObject qj = doc["question"];
+  if (!qj.isNull()) {
+    const char* qid = qj["id"];
+    const char* qh  = qj["header"];
+    const char* qt  = qj["text"];
+    if (!qt) qt = qj["question"];
+    const char* newId = qid ? qid : "";
+    bool idChanged = strcmp(out->qId, newId) != 0;
+    strncpy(out->qId, newId, sizeof(out->qId)-1); out->qId[sizeof(out->qId)-1]=0;
+    utf8CopyTruncate(out->qHeader, qh ? qh : "");
+    utf8CopyTruncate(out->qText, qt ? qt : "");
+    out->qMultiple = qj["multiple"] | false;
+    if (idChanged) {
+      out->qSelected = 0;
+      out->qCount = 0;
+      JsonArray opts = qj["options"];
+      if (!opts.isNull()) {
+        for (JsonVariant v : opts) {
+          if (out->qCount >= 6) break;
+          const char* s = v.as<const char*>();
+          utf8CopyTruncate(out->qOptions[out->qCount], s ? s : "");
+          out->qCount++;
+        }
+      }
+    }
+  } else if (out->qId[0]) {
+    out->qId[0] = 0; out->qHeader[0] = 0; out->qText[0] = 0;
+    out->qCount = 0; out->qMultiple = false; out->qSelected = 0;
+  }
   otaOfferLifecyclePoll(
     &out->otaOffer,
     millis(),
     bleConnected(),
-    out->promptId[0] != 0,
+    out->promptId[0] != 0 || out->qId[0] != 0,
     xferActive(),
     wifiManagerUiActive()
   );

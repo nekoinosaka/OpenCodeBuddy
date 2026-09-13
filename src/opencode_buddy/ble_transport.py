@@ -245,12 +245,14 @@ class NativeBleHelperSession:
         device_id: str,
         device_name: str,
         on_permission: Optional[Callable[[str, str], Awaitable[None]]],
+        on_question: Optional[Callable[..., Awaitable[None]]] = None,
         connect_timeout: float = 15.0,
         command_timeout: float = 10.0,
     ) -> None:
         self.device_id = device_id
         self.device_name = device_name
         self.on_permission = on_permission
+        self.on_question = on_question
         self.connect_timeout = connect_timeout
         self.command_timeout = command_timeout
 
@@ -423,6 +425,15 @@ class NativeBleHelperSession:
             asyncio.create_task(self.on_permission(request_id, decision))
             return
 
+        if event == "question" and self.on_question:
+            device_id = str(payload.get("id", ""))
+            answers = payload.get("answers")
+            reject = bool(payload.get("reject"))
+            asyncio.create_task(
+                self.on_question(device_id, answers if isinstance(answers, list) else [], reject)
+            )
+            return
+
         if event == "notification":
             line = payload.get("line")
             if not isinstance(line, str) or len(line.encode("utf-8")) > 1024:
@@ -499,6 +510,7 @@ class BleBuddyTransport:
         *,
         device_name: Optional[str] = None,
         on_permission: Optional[Callable[[str, str], Awaitable[None]]] = None,
+        on_question: Optional[Callable[..., Awaitable[None]]] = None,
         use_native_helper: Optional[bool] = None,
         native_session_factory: Optional[
             Callable[..., NativeBleHelperSession]
@@ -507,6 +519,7 @@ class BleBuddyTransport:
         self.device_id = device_id
         self.device_name = device_name or device_id
         self.on_permission = on_permission
+        self.on_question = on_question
         self._client: Optional[BleakClient] = None
         self._buffer = bytearray()
         self._lock: Optional[asyncio.Lock] = None
@@ -557,6 +570,7 @@ class BleBuddyTransport:
                     device_id=self.device_id,
                     device_name=self.device_name,
                     on_permission=self.on_permission,
+                    on_question=self.on_question,
                 )
             if self._native_session.is_connected:
                 return
@@ -657,6 +671,16 @@ class BleBuddyTransport:
                 decision = str(payload.get("decision", ""))
                 request_id = str(payload.get("id", ""))
                 asyncio.create_task(self.on_permission(request_id, decision))
+                continue
+            if payload.get("cmd") == "question" and self.on_question:
+                device_id = str(payload.get("id", ""))
+                answers = payload.get("answers")
+                reject = bool(payload.get("reject"))
+                asyncio.create_task(
+                    self.on_question(
+                        device_id, answers if isinstance(answers, list) else [], reject
+                    )
+                )
                 continue
             if self._notifications is None:
                 self._notifications = asyncio.Queue(maxsize=64)

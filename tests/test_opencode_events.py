@@ -2,6 +2,7 @@ from opencode_buddy.events import (
     AgentOutput,
     ApprovalRequest,
     ApprovalRequestResolved,
+    QuestionResolved,
     TokenUsage,
     TurnState,
 )
@@ -202,3 +203,94 @@ def test_permission_asked_maps_to_approval_request():
             hint="src/main.ts",
         )
     ]
+
+
+def test_question_replied_resolves_the_request():
+    adapter = OpenCodeEventAdapter()
+    assert adapter.handle(
+        {
+            "type": "question.replied",
+            "properties": {"sessionID": "ses-1", "requestID": "que-1", "answers": [["A"]]},
+        }
+    ) == [QuestionResolved(request_id="que-1")]
+
+
+def test_question_rejected_resolves_the_request():
+    adapter = OpenCodeEventAdapter()
+    assert adapter.handle(
+        {
+            "type": "question.rejected",
+            "properties": {"sessionID": "ses-1", "requestID": "que-2"},
+        }
+    ) == [QuestionResolved(request_id="que-2")]
+
+
+def test_permission_hint_prefers_metadata_command():
+    adapter = OpenCodeEventAdapter()
+    events = adapter.handle(
+        {
+            "type": "permission.asked",
+            "properties": {
+                "id": "p1",
+                "sessionID": "s",
+                "type": "bash",
+                "title": "",
+                "metadata": {"command": "rm -rf /tmp/x"},
+            },
+        }
+    )
+    assert events[0].hint == "rm -rf /tmp/x"
+
+
+def test_permission_hint_falls_back_to_title_then_pattern_list():
+    adapter = OpenCodeEventAdapter()
+    with_title = adapter.handle(
+        {
+            "type": "permission.asked",
+            "properties": {
+                "id": "p2",
+                "sessionID": "s",
+                "type": "external_directory",
+                "title": "Access external directory",
+                "pattern": ["/a/*", "/b/*"],
+            },
+        }
+    )
+    assert with_title[0].hint == "Access external directory"
+
+    pattern_only = adapter.handle(
+        {
+            "type": "permission.asked",
+            "properties": {
+                "id": "p3",
+                "sessionID": "s",
+                "type": "external_directory",
+                "pattern": ["/a/*", "/b/*"],
+            },
+        }
+    )
+    assert pattern_only[0].hint == "/a/*, /b/*"
+
+
+def test_permission_asked_real_shape_uses_permission_and_metadata():
+    adapter = OpenCodeEventAdapter()
+    events = adapter.handle(
+        {
+            "type": "permission.asked",
+            "properties": {
+                "id": "per_1",
+                "sessionID": "ses_1",
+                "permission": "external_directory",
+                "patterns": ["/System/Library/CoreServices/*"],
+                "metadata": {
+                    "command": "cat /System/Library/CoreServices/SystemVersion.plist",
+                    "patterns": ["/System/Library/CoreServices/*"],
+                },
+                "always": ["/System/Library/CoreServices/*"],
+                "tool": {"messageID": "msg_1", "callID": "call_1"},
+            },
+        }
+    )
+    assert events[0].tool == "external_directory"
+    assert events[0].turn_id == "call_1"
+    assert events[0].hint == "cat /System/Library/CoreServices/SystemVersion.plist"
