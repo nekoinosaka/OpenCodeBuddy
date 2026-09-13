@@ -3,7 +3,7 @@
 面向已经拥有一台 M5Stack StickS3、希望在 OpenCode 里用上实体宠物 / 审批设备的用户。
 
 > OpenCode Buddy 改编自 [Claude Desktop Buddy](https://github.com/anthropics/claude-desktop-buddy)
-> 与 [OpenCodeBuddy](https://github.com/CharlexH/CodeBuddy)，把主机侧从 Codex 换成了 OpenCode。
+> 与 [CodeBuddy](https://github.com/CharlexH/CodeBuddy)，把主机侧从 Codex 换成了 OpenCode。
 
 ---
 
@@ -261,5 +261,5 @@ cd firmware && pio test -e native   # 固件逻辑测试（如已配置 native �
 ## 12. 来源与许可
 
 - 改编自 [Claude Desktop Buddy](https://github.com/anthropics/claude-desktop-buddy)（Anthropic）
-  与 [OpenCodeBuddy](https://github.com/CharlexH/CodeBuddy)。
+  与 [CodeBuddy](https://github.com/CharlexH/CodeBuddy)。
 - 本仓库为其 OpenCode 适配 fork。

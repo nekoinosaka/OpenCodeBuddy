@@ -16,7 +16,7 @@
 <p align="center">
   一个基于 StickS3 的 <a href="https://opencode.ai">OpenCode</a> 硬件伙伴，改编自
   <a href="https://github.com/anthropics/claude-desktop-buddy">Claude Desktop Buddy</a>
-  和 <a href="https://github.com/CharlexH/CodeBuddy">OpenCodeBuddy</a>。
+  和 <a href="https://github.com/CharlexH/CodeBuddy">CodeBuddy</a>。
 </p>
 
 <p align="center">

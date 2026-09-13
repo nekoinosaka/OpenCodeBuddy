@@ -1,6 +1,6 @@
 # Hardware Buddy BLE Protocol
 
-This is the wire protocol OpenOpenCode Buddy speaks over Bluetooth LE.
+This is the wire protocol OpenCode Buddy speaks over Bluetooth LE.
 You don't need anything from this repository to implement it. Any device
 that can advertise the Nordic UART Service and parse newline-delimited JSON
 will work: Arduino, ESP32, nRF52, a Raspberry Pi with a BLE dongle.

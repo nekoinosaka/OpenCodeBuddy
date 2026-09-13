@@ -11,7 +11,7 @@ struct AboutInfo {
 inline AboutInfo currentAboutInfo() {
   return {
     "Ray",
-    "OpenOpenCode Buddy",
+    "OpenCode Buddy",
     "firmware fork",
     "M5Stick S3",
     "ESP32-S3 + M5PM1",
