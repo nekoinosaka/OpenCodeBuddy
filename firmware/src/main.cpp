@@ -1762,7 +1762,7 @@ static void sendQuestionReject() {
 
 static void drawQuestionPortrait() {
   const Palette& p = characterPalette();
-  const int AREA = 88;
+  const int AREA = 92;
   spr.fillRect(0, H - AREA, W, AREA, p.bg);
   spr.drawFastHLine(0, H - AREA, W, p.textDim);
   useDefaultTextFont(spr);
@@ -1784,20 +1784,22 @@ static void drawQuestionPortrait() {
   useDefaultTextFont(spr);
 
   const int ROW_Y = H - AREA + 42;
-  const int ROW_H = 11;
+  const int ROW_H = 12;
   const uint8_t MAX_ROWS = 3;
   uint8_t first = (tama.qSelected >= MAX_ROWS) ? (uint8_t)(tama.qSelected - MAX_ROWS + 1) : 0;
   for (uint8_t i = first; i < tama.qCount && (uint8_t)(i - first) < MAX_ROWS; ++i) {
     bool sel = (i == tama.qSelected);
     int y = ROW_Y + (i - first) * ROW_H;
-    char line[40];
+    char line[64];
     clipDisplayText(line, tama.qOptions[i], 18);
+    useUtf8FontForText(spr, line, &fonts::efontCN_12);
     spr.setTextColor(sel ? GREEN : p.text, p.bg);
     spr.setCursor(4, y);
     spr.print(sel ? ">" : " ");
     spr.setCursor(16, y);
     spr.print(line);
   }
+  useDefaultTextFont(spr);
 
   const int FOOTER_Y = H - 12;
   if (responseSent) {
@@ -1843,14 +1845,16 @@ static void drawQuestionLandscape(const Palette& p) {
   for (uint8_t i = first; i < tama.qCount && (uint8_t)(i - first) < MAX_ROWS; ++i) {
     bool sel = (i == tama.qSelected);
     int y = ROW_Y + (i - first) * ROW_H;
-    char line[48];
+    char line[64];
     clipDisplayText(line, tama.qOptions[i], 34);
+    useUtf8FontForText(M5.Lcd, line, &fonts::efontCN_12);
     M5.Lcd.setTextColor(sel ? GREEN : p.text, p.bg);
     M5.Lcd.setCursor(4, y);
     M5.Lcd.print(sel ? ">" : " ");
     M5.Lcd.setCursor(16, y);
     M5.Lcd.print(line);
   }
+  useDefaultTextFont(M5.Lcd);
 
   const int FOOTER_Y = LH - 12;
   if (responseSent) {

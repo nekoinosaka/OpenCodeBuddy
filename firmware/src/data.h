@@ -44,9 +44,9 @@ struct TamaState {
   char     promptTool[96];
   char     promptHint[256];
   char     qId[48];          // pending question request ID; empty = no question
-  char     qHeader[40];
-  char     qText[200];
-  char     qOptions[6][32];
+  char     qHeader[64];
+  char     qText[280];
+  char     qOptions[6][64];
   uint8_t  qCount;
   bool     qMultiple;
   uint8_t  qSelected;        // highlighted option index (device-side)
