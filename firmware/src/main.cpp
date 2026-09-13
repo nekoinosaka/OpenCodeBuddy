@@ -2931,7 +2931,10 @@ void loop() {
 
   // Keep the current LCD contents unchanged until the IMU pose resolves. Both
   // the sprite update path and the complete draw/push chain honor this gate.
-  bool renderSurface = !autoSurfaceAwaitingOrientation;
+  bool renderSurface = screenOrientRenderSurface(
+    autoSurfaceAwaitingOrientation,
+    inPrompt
+  );
   if (!renderSurface || napping || screenOff || landscapeClock || landscapeRuntime ||
       portraitSharedFace) {
     // skip sprite render — face-down, powered off, or a direct-to-LCD

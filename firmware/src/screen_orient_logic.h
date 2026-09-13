@@ -50,6 +50,16 @@ inline bool screenOrientRuntimeModeChanged(
   return runtimeOrienting && previousApprovalVisible != approvalVisible;
 }
 
+inline constexpr bool screenOrientRenderSurface(
+  bool awaitingOrientation,
+  bool approvalVisible
+) {
+  // A pending approval must always be painted. Suppressing the whole render
+  // chain until the IMU pose resolves leaves the previous frame on screen
+  // while the buttons are already live, so the user can approve blind.
+  return !awaitingOrientation || approvalVisible;
+}
+
 struct RuntimeLandscapeRenderState {
   bool initialized;
   bool overlayVisible;
