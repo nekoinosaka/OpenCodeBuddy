@@ -30,7 +30,7 @@
 ## 项目包含什么
 
 - 一个 macOS 主机桥接层，负责与 StickS3 配对、同步时间、安装原生 BLE helper，并安装 OpenCode 插件。
-- 一个 OpenCode 插件，负责转发实时会话事件，并把审批请求路由到设备。
+- 一个 OpenCode 插件，负责转发实时会话事件，并把审批请求和提问路由到设备。
 - 一套 StickS3 固件，包含状态页、审批页、设置页和离线页。
 - 一套尽量不打扰日常工作的流程：先跑一次 `opencode-buddy`，之后直接用 `opencode`。
 
@@ -40,9 +40,9 @@ OpenCode Buddy 由三部分组成：
 
 1. **设备固件**：以 `OpenCode-XXXX` 广播 Nordic UART Service，渲染宠物、状态和审批界面。
 2. **`opencode-buddy` agent**：作为 launchd 服务常驻，独占蓝牙连接，并持续把快照推送到设备。
-3. **OpenCode 插件**（`~/.config/opencode/plugins/opencode-buddy.js`）：运行在 OpenCode 进程内。启动时把 server URL 交给 agent，转发总线事件（`session.status`、`message.updated`、`message.part.updated`、`permission.*`），并实现 `permission.ask` hook，让设备可以批准或拒绝。
+3. **OpenCode 插件**（`~/.config/opencode/plugins/opencode-buddy.js`）：运行在 OpenCode 进程内。启动时把 server URL 交给 agent，转发总线事件（`session.status`、`message.updated`、`message.part.updated`），并处理 `permission.asked` / `question.asked`：先问设备，再用 OpenCode SDK 回包。
 
-有待审批请求时，StickS3 会显示提示：**A** 批准一次，**B** 拒绝。设备不在线时，会自动回退到 OpenCode 原生界面（agent 最多等待 60 秒后返回 `ask`）。
+有待审批请求时，StickS3 会显示提示：**A** 批准一次，**长按 A** 始终允许（`always`），**B** 拒绝。OpenCode 的 `question` 提问也会投到设备：**B** 切换选项，**A** 确认，**长按 B** 拒绝。设备不在线时，会自动回退到 OpenCode 原生界面（agent 最多等待 60 秒后返回 `ask`）。
 
 会话状态与 token 统计来自插件的实时事件。可选的只读会话 watcher 能额外读取 `GET /session`，但前提是用 `OPENCODE_SERVER_URL` 指向一个独立的 `opencode serve` 实例——TUI 自带的 server 并不通过 HTTP 对外可达。
 
@@ -122,15 +122,16 @@ opencode-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/fi
 
 ## 按键说明
 
-|                         | 常规界面             | 宠物界面    | 信息界面    | 审批界面    |
-| ----------------------- | -------------------- | ----------- | ----------- | ----------- |
-| **A**（正面）           | 下一个页面           | 下一个页面  | 下一个页面  | **批准**    |
-| **B**（右侧）           | 滚动 transcript      | 下一页      | 下一页      | **拒绝**    |
-| **长按 A**              | 菜单                 | 菜单        | 菜单        | 菜单        |
-| **Power**（左侧，短按） | 熄屏 / 亮屏          |             |             |             |
-| **Power**（左侧，约 6s）| 强制关机             |             |             |             |
-| **摇一摇**              | dizzy                |             |             | —           |
-| **正面朝下**            | nap（恢复能量）      |             |             |             |
+|                         | 常规界面             | 宠物界面    | 信息界面    | 审批界面    | 提问界面    |
+| ----------------------- | -------------------- | ----------- | ----------- | ----------- | ----------- |
+| **A**（正面）           | 下一个页面           | 下一个页面  | 下一个页面  | **批准**    | **确认**    |
+| **B**（右侧）           | 滚动 transcript      | 下一页      | 下一页      | **拒绝**    | **下一项**  |
+| **长按 A**              | 菜单                 | 菜单        | 菜单        | **始终允许**| 菜单        |
+| **长按 B**              | —                    | —           | —           | —           | **拒绝**    |
+| **Power**（左侧，短按） | 熄屏 / 亮屏          |             |             |             |             |
+| **Power**（左侧，约 6s）| 强制关机             |             |             |             |             |
+| **摇一摇**              | dizzy                |             |             |             | —           |
+| **正面朝下**            | nap（恢复能量）      |             |             |             |             |
 
 屏幕在 30 秒无操作后会自动熄灭；如果有待处理审批，会保持常亮。按任意键都可以唤醒。
 
@@ -153,7 +154,7 @@ opencode-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/fi
 
 固件内置了十八个 ASCII 宠物，每个宠物都包含七种动画：`sleep`、`idle`、`busy`、`attention`、`celebrate`、`dizzy` 和 `heart`。
 
-在设备上进入 `menu -> next pet` 可以轮换角色。选择会保存在设备存储里，重启后仍会保留。
+长按 **A** 打开菜单 → **Settings → ascii pet**，按 **B** 轮换角色（如果装了 GIF 角色包，会一起参与循环）。选择会保存在设备存储里，重启后仍会保留。
 
 如果你想换成自定义 GIF 角色，可以准备一个包含 `manifest.json` 和对应七种状态 GIF 的角色包。GIF 建议宽度为 96px：
 

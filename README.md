@@ -31,7 +31,7 @@
 ## What ships
 
 - A macOS bridge that pairs with the StickS3, syncs time, installs the native BLE helper, and installs an OpenCode plugin.
-- An OpenCode plugin that forwards live session events and routes permission prompts to the device.
+- An OpenCode plugin that forwards live session events and routes permission prompts and questions to the device.
 - A StickS3 firmware build with status, approval, settings, and offline screens.
 - A daily workflow designed to stay out of the way: run `opencode-buddy` once, then just use `opencode`.
 
@@ -41,9 +41,9 @@ OpenCode Buddy has three moving parts:
 
 1. **Device firmware** advertises the Nordic UART Service as `OpenCode-XXXX` and renders the pet, stats, and approval screens.
 2. **`opencode-buddy` agent** runs as a launchd service, owns the Bluetooth link, and keeps the device snapshot updated.
-3. **OpenCode plugin** (`~/.config/opencode/plugins/opencode-buddy.js`) runs inside OpenCode. On startup it hands the agent the server URL, forwards bus events (`session.status`, `message.updated`, `message.part.updated`, `permission.*`), and implements the `permission.ask` hook so the device can approve or deny.
+3. **OpenCode plugin** (`~/.config/opencode/plugins/opencode-buddy.js`) runs inside OpenCode. On startup it hands the agent the server URL, forwards bus events (`session.status`, `message.updated`, `message.part.updated`), and handles `permission.asked` / `question.asked` by asking the device and replying through the OpenCode SDK.
 
-When a permission prompt is pending, it is shown on the StickS3: **A** approves once, **B** denies. If the device is offline, the prompt falls back to the normal OpenCode UI (the agent waits up to 60 seconds, then returns `ask`).
+When a permission prompt is pending, it is shown on the StickS3: **A** approves once, **hold A** approves and remembers (`always`), **B** denies. OpenCode's `question` tool is routed to the device too: **B** cycles options, **A** confirms, **hold B** rejects. If the device is offline, the prompt falls back to the normal OpenCode UI (the agent waits up to 60 seconds, then returns `ask`).
 
 Session status and token totals are projected from live plugin events. The optional read-only session watcher can additionally read `GET /session`, but only when `OPENCODE_SERVER_URL` points at a standalone `opencode serve` instance — the TUI's embedded server is not reachable over HTTP.
 
@@ -132,15 +132,16 @@ The native BLE helper runs as a background macOS agent during normal use, so rec
 
 ## Controls
 
-|                         | Normal               | Pet         | Info        | Approval    |
-| ----------------------- | -------------------- | ----------- | ----------- | ----------- |
-| **A** (front)           | next screen          | next screen | next screen | **approve** |
-| **B** (right)           | scroll transcript    | next page   | next page   | **deny**    |
-| **Hold A**              | menu                 | menu        | menu        | menu        |
-| **Power** (left, short) | toggle screen off    |             |             |             |
-| **Power** (left, ~6s)   | hard power off       |             |             |             |
-| **Shake**               | dizzy                |             |             | —           |
-| **Face-down**           | nap (energy refills) |             |             |             |
+|                         | Normal               | Pet         | Info        | Approval    | Question    |
+| ----------------------- | -------------------- | ----------- | ----------- | ----------- | ----------- |
+| **A** (front)           | next screen          | next screen | next screen | **approve** | **confirm** |
+| **B** (right)           | scroll transcript    | next page   | next page   | **deny**    | **next option** |
+| **Hold A**              | menu                 | menu        | menu        | **always**  | menu        |
+| **Hold B**              | —                    | —           | —           | —           | **reject**  |
+| **Power** (left, short) | toggle screen off    |             |             |             |             |
+| **Power** (left, ~6s)   | hard power off       |             |             |             |             |
+| **Shake**               | dizzy                |             |             |             | —           |
+| **Face-down**           | nap (energy refills) |             |             |             |             |
 
 The screen auto-powers off after 30 seconds of inactivity and stays on while an approval prompt is pending. Any button press wakes it.
 
@@ -163,7 +164,7 @@ When the StickS3 is on USB power, its RTC retains valid time, and there is no ru
 
 The firmware ships with eighteen ASCII pets. Each one includes seven animations: `sleep`, `idle`, `busy`, `attention`, `celebrate`, `dizzy`, and `heart`.
 
-Use `menu -> next pet` on the device to cycle through them. The selection is saved in device storage.
+Hold **A** to open the menu, then go to **Settings -> ascii pet** and press **B** to cycle through them (a GIF pack, if installed, is part of the cycle). The selection is saved in device storage.
 
 If you want a custom GIF character, create a pack with a `manifest.json` and 96px-wide GIFs for the same seven states:
 
