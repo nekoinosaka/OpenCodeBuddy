@@ -56,37 +56,6 @@ def test_list_sessions_raises_on_bad_status():
         client.list_sessions()
 
 
-def test_respond_permission_posts_allowed_response():
-    fetch = _FakeFetch([(200, b"true")])
-    client = OpenCodeServerClient("http://127.0.0.1:4096", fetch=fetch)
-
-    assert client.respond_permission("per-1", "once") is True
-
-    method, url, body, _ = fetch.calls[0]
-    assert method == "POST"
-    assert url == "http://127.0.0.1:4096/permission/per-1/reply"
-    assert json.loads(body) == {"reply": "once"}
-
-
-def test_respond_permission_includes_directory_query():
-    fetch = _FakeFetch([(200, b"true")])
-    client = OpenCodeServerClient("http://127.0.0.1:4096", fetch=fetch)
-
-    assert client.respond_permission("per-1", "always", directory="/tmp/proj") is True
-
-    url = fetch.calls[0][1]
-    assert url.startswith("http://127.0.0.1:4096/permission/per-1/reply?")
-    assert "directory=%2Ftmp%2Fproj" in url
-    assert json.loads(fetch.calls[0][2]) == {"reply": "always"}
-
-
-def test_respond_permission_rejects_unknown_response():
-    client = OpenCodeServerClient("http://127.0.0.1:4096", fetch=_FakeFetch([]))
-
-    with pytest.raises(ValueError):
-        client.respond_permission("per-1", "maybe")
-
-
 def test_health_reports_reachability():
     client = OpenCodeServerClient(
         "http://127.0.0.1:4096", fetch=_FakeFetch([(200, b'{"healthy":true}')])

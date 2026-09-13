@@ -33,17 +33,22 @@ class OpenCodeEventAdapter:
     cumulative session totals.
     """
 
+    _MESSAGE_CAP = 512
+
     def __init__(self) -> None:
         self._meta: dict[str, OpenCodeSessionMeta] = {}
-        self._assistant_output: dict[str, dict[str, int]] = {}
+        self._session_output_total: dict[str, int] = {}
+        self._message_output: dict[str, dict[str, int]] = {}
 
     def directory(self, session_id: str) -> str:
         meta = self._meta.get(str(session_id))
         return meta.directory if meta is not None else ""
 
     def forget(self, session_id: str) -> None:
-        self._meta.pop(str(session_id), None)
-        self._assistant_output.pop(str(session_id), None)
+        session_id = str(session_id)
+        self._meta.pop(session_id, None)
+        self._session_output_total.pop(session_id, None)
+        self._message_output.pop(session_id, None)
 
     def handle(self, event: object) -> list[object]:
         if not isinstance(event, dict):
@@ -139,9 +144,23 @@ class OpenCodeEventAdapter:
         output_tokens = _as_int(tokens.get("output")) if isinstance(tokens, dict) else None
         if output_tokens is None:
             return []
-        session_totals = self._assistant_output.setdefault(session_id, {})
-        session_totals[message_id] = output_tokens
-        total = sum(session_totals.values())
+        messages = self._message_output.setdefault(session_id, {})
+        previous = messages.get(message_id)
+        if previous is None:
+            delta = output_tokens
+        elif output_tokens > previous:
+            delta = output_tokens - previous
+        else:
+            delta = 0
+        if delta:
+            self._session_output_total[session_id] = (
+                self._session_output_total.get(session_id, 0) + delta
+            )
+            messages[message_id] = output_tokens
+            if len(messages) > self._MESSAGE_CAP:
+                for stale in list(messages)[: len(messages) - self._MESSAGE_CAP]:
+                    messages.pop(stale, None)
+        total = self._session_output_total.get(session_id, 0)
         return [
             TokenUsage(
                 thread_id=session_id,

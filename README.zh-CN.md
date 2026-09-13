@@ -44,7 +44,7 @@ Code Buddy 由三部分组成：
 
 有待审批请求时，StickS3 会显示提示：**A** 批准一次，**B** 拒绝。设备不在线时，会自动回退到 OpenCode 原生界面（agent 最多等待 60 秒后返回 `ask`）。
 
-会话历史和 token/费用统计来自 OpenCode server（`GET /session`）。插件会自动提供 server URL，因此只要 agent 能访问该 server，历史就能正常工作。也可以用 `OPENCODE_SERVER_URL` 指向一个独立的 `opencode serve` 实例。
+会话状态与 token 统计来自插件的实时事件。可选的只读会话 watcher 能额外读取 `GET /session`，但前提是用 `OPENCODE_SERVER_URL` 指向一个独立的 `opencode serve` 实例——TUI 自带的 server 并不通过 HTTP 对外可达。
 
 ## 快速开始
 

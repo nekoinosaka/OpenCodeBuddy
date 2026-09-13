@@ -3,13 +3,11 @@ from __future__ import annotations
 import json
 import os
 import urllib.error
-import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 _DEFAULT_URL = "http://127.0.0.1:4096"
-_ALLOWED_PERMISSION_RESPONSES = {"once", "always", "reject"}
 
 Fetcher = Callable[[str, str, Optional[bytes], float], "tuple[int, bytes]"]
 
@@ -75,11 +73,12 @@ def _default_fetch(method: str, url: str, body: Optional[bytes], timeout: float)
 
 
 class OpenCodeServerClient:
-    """Minimal HTTP client for a running OpenCode server.
+    """Minimal HTTP client for a standalone ``opencode serve`` instance.
 
-    The plugin path already streams live events; this client covers the server
-    API the plugin cannot reach: session history/usage (``GET /session``) and
-    permission replies that carry ``always`` (``POST /session/:id/permissions``).
+    Live events and permission replies are handled entirely by the in-process
+    plugin. This client is only used by the optional session watcher when
+    ``OPENCODE_SERVER_URL`` points at a server that is reachable over HTTP
+    (a standalone ``opencode serve``); the TUI's embedded server is not.
     """
 
     def __init__(
@@ -116,29 +115,6 @@ class OpenCodeServerClient:
             if summary is not None:
                 summaries.append(summary)
         return summaries
-
-    def respond_permission(
-        self,
-        request_id: str,
-        response: str,
-        *,
-        directory: Optional[str] = None,
-        message: Optional[str] = None,
-    ) -> bool:
-        if response not in _ALLOWED_PERMISSION_RESPONSES:
-            raise ValueError(f"unsupported permission response: {response}")
-        body: dict[str, Any] = {"reply": response}
-        if message:
-            body["message"] = message
-        query = {"directory": directory} if directory else None
-        url = f"{self.base_url}/permission/{urllib.parse.quote(str(request_id), safe='')}/reply"
-        if query:
-            url = f"{url}?{urllib.parse.urlencode(query)}"
-        status, _ = self._fetch(
-            "POST", url, json.dumps(body).encode("utf-8"), self.timeout
-        )
-        return 200 <= status < 300
-
 
 def _session_summary(item: object) -> Optional[OpenCodeSessionSummary]:
     if not isinstance(item, dict):

@@ -26,6 +26,13 @@ def _permission_payload(request_id="per-1", session_id="ses-1"):
     }
 
 
+async def _wait_for_waiter(agent) -> None:
+    for _ in range(200):
+        if agent._opencode_permission_waiters:
+            return
+        await asyncio.sleep(0.01)
+
+
 def test_notify_updates_the_snapshot(tmp_path):
     async def exercise():
         agent = BuddyAgent(tmp_path / "state.json", clock=lambda: 100.0)
@@ -50,13 +57,16 @@ def test_notify_updates_the_snapshot(tmp_path):
 
 def test_permission_ask_without_ble_falls_back_to_host_prompt(tmp_path):
     async def exercise():
-        agent = BuddyAgent(tmp_path / "state.json", clock=lambda: 100.0)
+        agent = BuddyAgent(
+            tmp_path / "state.json", clock=lambda: 100.0, opencode_connect_wait=0.0
+        )
         agent._ble_connected = False
         return await agent._handle_command(
             {"cmd": "permission_ask", "permission": _permission_payload()}
         )
 
-    assert asyncio.run(exercise()) == {"ok": True, "decision": "ask"}
+    response = asyncio.run(exercise())
+    assert response["decision"] == "ask"
 
 
 def test_device_approval_resolves_permission_ask(tmp_path):
@@ -73,18 +83,15 @@ def test_device_approval_resolves_permission_ask(tmp_path):
                 {"cmd": "permission_ask", "permission": _permission_payload()}
             )
         )
-        for _ in range(100):
-            if agent._opencode_permission_waiters:
-                break
-            await asyncio.sleep(0.01)
-        waiting_snapshot = agent._snapshot()
+        await _wait_for_waiter(agent)
+        waiting = agent._snapshot()
         await agent._handle_device_permission("per-1", "once")
         response = await task
-        return response, waiting_snapshot, agent._snapshot()
+        return response, waiting, agent._snapshot()
 
     response, waiting, resolved = asyncio.run(exercise())
 
-    assert response == {"ok": True, "decision": "once"}
+    assert response["decision"] == "once"
     assert waiting.waiting == 1
     assert waiting.prompt == {"id": "per-1", "tool": "bash", "hint": "rm -rf /tmp/foo"}
     assert resolved.waiting == 0
@@ -105,14 +112,11 @@ def test_device_denial_resolves_permission_ask(tmp_path):
                 {"cmd": "permission_ask", "permission": _permission_payload()}
             )
         )
-        for _ in range(100):
-            if agent._opencode_permission_waiters:
-                break
-            await asyncio.sleep(0.01)
+        await _wait_for_waiter(agent)
         await agent._handle_device_permission("per-1", "deny")
         return await task
 
-    assert asyncio.run(exercise()) == {"ok": True, "decision": "deny"}
+    assert asyncio.run(exercise())["decision"] == "deny"
 
 
 def test_permission_ask_times_out_to_host_prompt(tmp_path):
@@ -128,7 +132,7 @@ def test_permission_ask_times_out_to_host_prompt(tmp_path):
             {"cmd": "permission_ask", "permission": _permission_payload()}
         )
 
-    assert asyncio.run(exercise()) == {"ok": True, "decision": "ask"}
+    assert asyncio.run(exercise())["decision"] == "ask"
 
 
 def test_permission_replied_notify_resolves_pending_prompt(tmp_path):
@@ -145,10 +149,7 @@ def test_permission_replied_notify_resolves_pending_prompt(tmp_path):
                 {"cmd": "permission_ask", "permission": _permission_payload()}
             )
         )
-        for _ in range(100):
-            if agent._opencode_permission_waiters:
-                break
-            await asyncio.sleep(0.01)
+        await _wait_for_waiter(agent)
         await agent._handle_command(
             {
                 "cmd": "notify",
@@ -164,10 +165,10 @@ def test_permission_replied_notify_resolves_pending_prompt(tmp_path):
         )
         return await task
 
-    assert asyncio.run(exercise()) == {"ok": True, "decision": "ask"}
+    assert asyncio.run(exercise())["decision"] == "ask"
 
 
-def test_hello_builds_the_server_session_watcher(tmp_path):
+def test_hello_records_server_url_without_building_a_watcher(tmp_path):
     async def exercise():
         agent = BuddyAgent(tmp_path / "state.json", clock=lambda: 1.0)
         assert agent._session_watcher is None
@@ -176,7 +177,8 @@ def test_hello_builds_the_server_session_watcher(tmp_path):
 
     agent = asyncio.run(exercise())
 
-    assert agent._session_watcher is not None
+    assert agent._session_watcher is None
+    assert agent._opencode_server_url == "http://127.0.0.1:4096"
     assert agent._server_client.base_url == "http://127.0.0.1:4096"
 
 
@@ -193,6 +195,40 @@ def test_injected_session_watcher_is_not_replaced_by_hello(tmp_path):
     assert agent._session_watcher is sentinel
 
 
+def test_permission_ask_includes_session_directory(tmp_path):
+    async def exercise():
+        agent = BuddyAgent(
+            tmp_path / "state.json",
+            clock=lambda: 1.0,
+            opencode_permission_timeout=5.0,
+        )
+        agent._ble = _CapturingBle()
+        agent._ble_connected = True
+        await agent._handle_command(
+            {
+                "cmd": "notify",
+                "event": {
+                    "type": "session.created",
+                    "properties": {"info": {"id": "ses-1", "directory": "/tmp/proj"}},
+                },
+            }
+        )
+        task = asyncio.create_task(
+            agent._handle_command(
+                {"cmd": "permission_ask", "permission": _permission_payload()}
+            )
+        )
+        await _wait_for_waiter(agent)
+        await agent._handle_device_permission("per-1", "deny")
+        return await task
+
+    assert asyncio.run(exercise()) == {
+        "ok": True,
+        "decision": "deny",
+        "directory": "/tmp/proj",
+    }
+
+
 def test_device_always_decision_passes_through(tmp_path):
     async def exercise():
         agent = BuddyAgent(
@@ -207,54 +243,35 @@ def test_device_always_decision_passes_through(tmp_path):
                 {"cmd": "permission_ask", "permission": _permission_payload()}
             )
         )
-        for _ in range(100):
-            if agent._opencode_permission_waiters:
-                break
-            await asyncio.sleep(0.01)
+        await _wait_for_waiter(agent)
         await agent._handle_device_permission("per-1", "always")
         return await task
 
-    assert asyncio.run(exercise()) == {"ok": True, "decision": "always"}
+    assert asyncio.run(exercise())["decision"] == "always"
 
 
-class _FakeServerClient:
-    def __init__(self) -> None:
-        self.calls = []
-
-    def respond_permission(self, request_id, response, *, directory=None, message=None):
-        self.calls.append((request_id, response, directory))
-        return True
-
-
-def test_event_driven_device_decision_replies_via_server(tmp_path):
+def test_snapshot_prunes_stale_session_runtime(tmp_path):
     async def exercise():
-        server = _FakeServerClient()
-        agent = BuddyAgent(
-            tmp_path / "state.json", clock=lambda: 100.0, server_client=server
-        )
+        agent = BuddyAgent(tmp_path / "state.json", clock=lambda: 1000.0)
         agent._ble = _CapturingBle()
         agent._ble_connected = True
         await agent._handle_command(
             {
                 "cmd": "notify",
                 "event": {
-                    "type": "permission.asked",
-                    "properties": {
-                        "id": "per-9",
-                        "sessionID": "ses-9",
-                        "type": "bash",
-                        "title": "rm -rf x",
-                        "pattern": "rm *",
-                    },
+                    "type": "session.status",
+                    "properties": {"sessionID": "ses-old", "status": {"type": "busy"}},
                 },
             }
         )
-        waiting = agent._snapshot().waiting
-        await agent._handle_device_permission("per-9", "deny")
-        return server, waiting, agent._snapshot()
+        await agent._handle_command(
+            {"cmd": "notify", "event": {"type": "session.idle", "properties": {"sessionID": "ses-old"}}}
+        )
+        assert "ses-old" in agent._opencode_runtime
+        agent.clock = lambda: 5000.0
+        agent._snapshot()
+        return agent
 
-    server, waiting, resolved = asyncio.run(exercise())
+    agent = asyncio.run(exercise())
 
-    assert waiting == 1
-    assert server.calls == [("per-9", "reject", None)]
-    assert resolved.waiting == 0
+    assert agent._opencode_runtime == {}

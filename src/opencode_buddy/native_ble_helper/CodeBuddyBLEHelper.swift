@@ -354,6 +354,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CBCentralManagerDelega
     }
 
     private func matches(peripheral: CBPeripheral, advertisementData: [String: Any]) -> Bool {
+        if config.deviceID?.uppercased() == "__SCAN_ONLY__" {
+            return false
+        }
         let identifier = peripheral.identifier.uuidString.uppercased()
         if let expected = config.deviceID?.uppercased(), expected == identifier {
             return true

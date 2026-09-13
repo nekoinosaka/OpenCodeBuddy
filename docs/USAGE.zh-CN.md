@@ -185,11 +185,12 @@ ota/                # OTA 信任材料（私钥 + 公钥）
 
 ---
 
-## 8. 会话历史与用量
+## 8. 会话状态与用量
 
-- 插件启动、以及每次事件里都会带上 server URL，agent 据此读取 `GET /session`，
-  把每个会话的 `tokens.output`、`cost`、`directory`、`title` 投影成只读会话。
-- 因此设备上的会话数、token 计数来自 OpenCode server 的真实数据。
+- 设备上的会话状态、token 计数、最近记录来自**插件的实时事件**（`session.*` / `message.*`）。
+- 可选的只读会话 watcher 能额外读取 `GET /session`，但**仅当**用 `OPENCODE_SERVER_URL`
+  指向一个独立的 `opencode serve` 实例时才有效；OpenCode TUI 自带的 server 不通过 HTTP
+  对外可达，所以默认不会启用。
 - OpenCode 没有账号级 rate-limit API，所以**没有** 5 小时 / 7 天额度表；
   设备端会省略该字段。
 

@@ -86,29 +86,11 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
     } catch {}
   }
 
-  const replyToOpenCode = async (permission, decision) => {
+  const replyToOpenCode = async (permission, decision, directoryHint) => {
     const reply = decisionToReply(decision)
-    if (!reply || !permission?.id) return false
-    const dir = permission.directory || directory || undefined
+    if (!reply || !permission?.id) return null
+    const dir = directoryHint || directory || undefined
     const attempts = []
-    if (typeof client?.permission?.reply === "function") {
-      attempts.push([
-        "permission.reply",
-        () => client.permission.reply({ requestID: permission.id, reply, directory: dir }),
-      ])
-    }
-    if (typeof client?.permission?.respond === "function") {
-      attempts.push([
-        "permission.respond",
-        () =>
-          client.permission.respond({
-            sessionID: permission.sessionID,
-            permissionID: permission.id,
-            response: reply,
-            directory: dir,
-          }),
-      ])
-    }
     if (typeof client?.postSessionIdPermissionsPermissionId === "function") {
       attempts.push([
         "postSessionIdPermissionsPermissionId",
@@ -129,11 +111,29 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
           }),
       ])
     }
+    if (typeof client?.permission?.respond === "function") {
+      attempts.push([
+        "permission.respond",
+        () =>
+          client.permission.respond({
+            sessionID: permission.sessionID,
+            permissionID: permission.id,
+            response: reply,
+            directory: dir,
+          }),
+      ])
+    }
+    if (typeof client?.permission?.reply === "function") {
+      attempts.push([
+        "permission.reply",
+        () => client.permission.reply({ requestID: permission.id, reply, directory: dir }),
+      ])
+    }
     if (attempts.length === 0) {
       await log("warn", "no permission reply method on client", {
-        permission: Object.keys(client?.permission ?? {}),
+        permission: Object.keys(client?.permission ?? {}).sort().join(","),
       })
-      return false
+      return null
     }
     for (const [name, attempt] of attempts) {
       try {
@@ -142,12 +142,42 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
           await log("warn", "permission reply rejected", { method: name, error: String(result.error) })
           continue
         }
-        return true
+        return name
       } catch (error) {
         await log("warn", "permission reply failed", { method: name, error: String(error) })
       }
     }
-    return false
+    return null
+  }
+
+  const permissionQueue = []
+  let drainingPermissions = false
+
+  const drainPermissions = async () => {
+    if (drainingPermissions) return
+    drainingPermissions = true
+    try {
+      while (permissionQueue.length > 0) {
+        const permission = permissionQueue.shift()
+        const response = await request(
+          { cmd: "permission_ask", permission },
+          65000,
+        )
+        const method = await replyToOpenCode(
+          permission,
+          response?.decision,
+          response?.directory,
+        )
+        await log("info", "permission decision", {
+          id: permission.id,
+          decision: response?.decision ?? "ask",
+          delivered: method != null,
+          method: method || "",
+        })
+      }
+    } finally {
+      drainingPermissions = false
+    }
   }
 
   await request(
@@ -161,8 +191,8 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
   await log("info", "Code Buddy bridge plugin initialized", { socket: SOCKET_PATH })
   try {
     await log("info", "Code Buddy client surface", {
-      top: Object.keys(client ?? {}).sort(),
-      permission: Object.keys(client?.permission ?? {}).sort(),
+      top: Object.keys(client ?? {}).sort().join(","),
+      permission: Object.keys(client?.permission ?? {}).sort().join(","),
     })
   } catch {}
 
@@ -170,24 +200,16 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
     event: async ({ event }) => {
       if (event?.type === "permission.asked") {
         const permission = event.properties || {}
-        await log("info", "permission.asked received", {
+        void log("info", "permission.asked queued", {
           id: permission.id,
           tool: permission.type,
         })
-        const response = await request(
-          { cmd: "permission_ask", permission },
-          65000,
-        )
-        const delivered = await replyToOpenCode(permission, response?.decision)
-        await log("info", "permission decision", {
-          id: permission.id,
-          decision: response?.decision ?? "ask",
-          delivered,
-        })
+        permissionQueue.push(permission)
+        void drainPermissions()
         return
       }
       if (!worthForwarding(event)) return
-      await request(
+      void request(
         { cmd: "notify", event, serverUrl: serverUrl ? String(serverUrl) : "" },
         2000,
       )

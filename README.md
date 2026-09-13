@@ -45,7 +45,7 @@ Code Buddy has three moving parts:
 
 When a permission prompt is pending, it is shown on the StickS3: **A** approves once, **B** denies. If the device is offline, the prompt falls back to the normal OpenCode UI (the agent waits up to 60 seconds, then returns `ask`).
 
-Session history and token/cost totals are read from the OpenCode server (`GET /session`). The plugin supplies the server URL automatically, so history works whenever the agent can reach that server. Set `OPENCODE_SERVER_URL` to point at a standalone `opencode serve` instance instead.
+Session status and token totals are projected from live plugin events. The optional read-only session watcher can additionally read `GET /session`, but only when `OPENCODE_SERVER_URL` points at a standalone `opencode serve` instance — the TUI's embedded server is not reachable over HTTP.
 
 ## Quick start
 

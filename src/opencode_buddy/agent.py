@@ -212,6 +212,7 @@ class BuddyAgent:
         ota_confirm_timeout: float = 180.0,
         ota_install_timeout: float = 600.0,
         opencode_permission_timeout: float = 60.0,
+        opencode_connect_wait: float = 3.0,
     ) -> None:
         self.state_path = state_path
         self.socket_path = socket_path or default_socket_path(state_path)
@@ -233,6 +234,7 @@ class BuddyAgent:
         self._opencode_adapter = OpenCodeEventAdapter()
         self._opencode_runtime: dict[str, OpenCodeSessionRuntime] = {}
         self._opencode_permission_timeout = opencode_permission_timeout
+        self._opencode_connect_wait = opencode_connect_wait
         self._opencode_permission_waiters: dict[str, asyncio.Future[str]] = {}
         self._tasks: list[asyncio.Task[None]] = []
         self._server: Optional[asyncio.AbstractServer] = None
@@ -682,8 +684,6 @@ class BuddyAgent:
             return
         self._opencode_server_url = url
         self._server_client = OpenCodeServerClient(url)
-        if not self._session_watcher_injected:
-            self._session_watcher = OpenCodeSessionWatcher(self._server_client)
 
     async def _opencode_notify(self, payload: dict[str, object]) -> dict[str, object]:
         self._ensure_server_url(payload.get("serverUrl"))
@@ -700,6 +700,12 @@ class BuddyAgent:
         if not request_id:
             return {"ok": True, "decision": "ask"}
         if not self._ble_connected or self._ble is None:
+            # The BLE loop reconnects every few seconds; give it a moment so a
+            # transient drop doesn't push the prompt back to the terminal.
+            deadline = time.monotonic() + self._opencode_connect_wait
+            while (not self._ble_connected or self._ble is None) and time.monotonic() < deadline:
+                await asyncio.sleep(0.1)
+        if not self._ble_connected or self._ble is None:
             return {"ok": True, "decision": "ask"}
         if self.catalog.session_for_request(request_id) is None:
             for event in self._opencode_adapter.handle(
@@ -715,7 +721,8 @@ class BuddyAgent:
         finally:
             self._opencode_permission_waiters.pop(request_id, None)
             await self._resolve_opencode_permission(request_id)
-        return {"ok": True, "decision": decision}
+        directory = self._opencode_adapter.directory(str(permission.get("sessionID", "")))
+        return {"ok": True, "decision": decision, "directory": directory}
 
     async def _handle_opencode_event(self, event: object) -> None:
         now = self.clock()
@@ -760,29 +767,9 @@ class BuddyAgent:
 
     async def _handle_device_permission(self, request_id: str, decision: str) -> None:
         waiter = self._opencode_permission_waiters.get(str(request_id))
-        if waiter is not None and not waiter.done():
-            if decision in {"once", "deny", "always"}:
-                waiter.set_result(decision)
-            else:
-                waiter.set_result("once")
+        if waiter is None or waiter.done():
             return
-        session_id = self._request_to_control.get(str(request_id))
-        if session_id is None:
-            return
-        response = "reject" if decision == "deny" else decision if decision == "always" else "once"
-        directory = self._opencode_adapter.directory(session_id) or None
-        try:
-            delivered = await asyncio.to_thread(
-                self._server_client.respond_permission,
-                str(request_id),
-                response,
-                directory=directory,
-            )
-            if not delivered:
-                _LOG.warning("OpenCode rejected permission reply %s", request_id)
-        except Exception:
-            _LOG.warning("failed to deliver permission decision to OpenCode", exc_info=True)
-        await self._resolve_opencode_permission(str(request_id))
+        waiter.set_result(decision if decision in {"once", "deny", "always"} else "once")
 
     async def _publish_state(self, *, force: bool = False) -> None:
         snapshot = self._snapshot()
@@ -804,6 +791,9 @@ class BuddyAgent:
         now = self.clock()
         sessions = self.catalog.sessions(now=now)
         session_ids = {session.session_id for session in sessions}
+        for stale in [sid for sid in list(self._opencode_runtime) if sid not in session_ids]:
+            self._opencode_runtime.pop(stale, None)
+            self._opencode_adapter.forget(stale)
         for session in sessions:
             heartbeat_total = session.heartbeat_tokens_total
             if heartbeat_total is None and session.control_capability == "readonly":
