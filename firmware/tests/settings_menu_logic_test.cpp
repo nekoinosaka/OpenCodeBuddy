@@ -58,7 +58,7 @@ int main() {
 
   expect_true(otaUpdateCommandLineCount() == 2,
               "formal firmware update command should wrap onto two lines");
-  expect_true(strcmp(otaUpdateCommandLine(0), "code-buddy") == 0,
+  expect_true(strcmp(otaUpdateCommandLine(0), "opencode-buddy") == 0,
               "first OTA command line should use the formal executable");
   expect_true(strcmp(otaUpdateCommandLine(1), "firmware update") == 0,
               "second OTA command line should use the formal subcommand");

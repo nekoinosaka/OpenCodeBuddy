@@ -90,10 +90,10 @@ if [[ ${#ESPTOOL_COMMAND[@]} -eq 0 ]]; then
   exit 1
 fi
 
-OUTPUT="$DIST_DIR/code-buddy-sticks3-v${VERSION}-full.bin"
-APP_OUTPUT="$DIST_DIR/code-buddy-sticks3-v${VERSION}-app.bin"
-DEFAULT_APP_OUTPUT="$DIST_DIR/code-buddy-sticks3-app.bin"
-PACKAGE_APP_OUTPUT="$PACKAGE_FIRMWARE_DIR/code-buddy-sticks3-app.bin"
+OUTPUT="$DIST_DIR/opencode-buddy-sticks3-v${VERSION}-full.bin"
+APP_OUTPUT="$DIST_DIR/opencode-buddy-sticks3-v${VERSION}-app.bin"
+DEFAULT_APP_OUTPUT="$DIST_DIR/opencode-buddy-sticks3-app.bin"
+PACKAGE_APP_OUTPUT="$PACKAGE_FIRMWARE_DIR/opencode-buddy-sticks3-app.bin"
 
 for artifact in \
   "$BUILD_DIR/bootloader.bin" \

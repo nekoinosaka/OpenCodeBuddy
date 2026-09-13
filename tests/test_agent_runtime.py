@@ -29,7 +29,7 @@ class _PeerSocket:
 
 
 def test_runtime_root_is_created_or_corrected_to_owner_only(tmp_path):
-    root = tmp_path / ".code-buddy"
+    root = tmp_path / ".opencode-buddy"
     root.mkdir(mode=0o755)
 
     ensure_private_runtime_root(root)
@@ -40,7 +40,7 @@ def test_runtime_root_is_created_or_corrected_to_owner_only(tmp_path):
 def test_runtime_root_rejects_symlink(tmp_path):
     actual = tmp_path / "actual"
     actual.mkdir()
-    root = tmp_path / ".code-buddy"
+    root = tmp_path / ".opencode-buddy"
     root.symlink_to(actual, target_is_directory=True)
 
     with pytest.raises(RuntimeError, match="real directory"):
@@ -94,7 +94,7 @@ def test_process_lock_is_exclusive_until_owner_releases_it(tmp_path):
 
 def test_concurrent_agent_start_preserves_the_live_socket_and_ping_owner(tmp_path):
     async def exercise():
-        socket = Path(f"/tmp/code-buddy-agent-lock-{id(tmp_path)}.sock")
+        socket = Path(f"/tmp/opencode-buddy-agent-lock-{id(tmp_path)}.sock")
         second_monitor_started = False
         first = BuddyAgent(
             tmp_path / "state.json",
@@ -179,7 +179,7 @@ def _write_valid_transient_tree(root: Path) -> tuple[Path, Path, Path, Path]:
 
 def test_startup_cleanup_removes_only_transient_ota_residue(tmp_path):
     snapshots, sessions, releases, generation = _write_valid_transient_tree(tmp_path)
-    stable_firmware = tmp_path / "firmware" / "code-buddy-sticks3-app.bin"
+    stable_firmware = tmp_path / "firmware" / "opencode-buddy-sticks3-app.bin"
     stable_firmware.parent.mkdir()
     stable_firmware.write_bytes(b"keep")
 

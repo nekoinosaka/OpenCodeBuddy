@@ -186,7 +186,7 @@ def create_ephemeral_tls_material(
             "prompt = no\n"
             "distinguished_name = subject\n"
             "[subject]\n"
-            "CN = Code Buddy One-Shot OTA\n"
+            "CN = OpenCode Buddy One-Shot OTA\n"
             "[server]\n"
             "basicConstraints = critical,CA:FALSE\n"
             "keyUsage = critical,digitalSignature,keyAgreement\n"

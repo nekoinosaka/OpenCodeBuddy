@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
   <key>CFBundleDisplayName</key>
-  <string>CodeBuddyBLEHelper</string>
+  <string>OpenCodeBuddyBLEHelper</string>
   <key>CFBundleExecutable</key>
-  <string>CodeBuddyBLEHelper</string>
+  <string>OpenCodeBuddyBLEHelper</string>
   <key>CFBundleIdentifier</key>
-  <string>com.charlex.codebuddy.blehelper</string>
+  <string>com.charlex.opencodebuddy.blehelper</string>
   <key>CFBundleName</key>
-  <string>CodeBuddyBLEHelper</string>
+  <string>OpenCodeBuddyBLEHelper</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
@@ -21,9 +21,9 @@
   <key>LSUIElement</key>
   <true/>
   <key>NSBluetoothAlwaysUsageDescription</key>
-  <string>CodeBuddy communicates with your StickS3 hardware buddy over Bluetooth Low Energy.</string>
+  <string>OpenCodeBuddy communicates with your StickS3 hardware buddy over Bluetooth Low Energy.</string>
   <key>NSBluetoothPeripheralUsageDescription</key>
-  <string>CodeBuddy communicates with your StickS3 hardware buddy over Bluetooth Low Energy.</string>
+  <string>OpenCodeBuddy communicates with your StickS3 hardware buddy over Bluetooth Low Energy.</string>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
 </dict>

@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 
-RESOURCE = "code-buddy-sticks3-app.bin"
+RESOURCE = "opencode-buddy-sticks3-app.bin"
 
 
 def test_wheel_and_sdist_contain_the_default_firmware_resource(tmp_path):

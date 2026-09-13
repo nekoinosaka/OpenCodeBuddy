@@ -11,7 +11,7 @@ from .ota_release import _parse_semantic_version, sign_manifest
 
 _NONCE = re.compile(r"^[0-9A-Za-z_-]{24,48}$")
 _DEVICE_NAME = re.compile(r"^OpenCode-[0-9A-F]{4}$")
-_AUTHORIZATION_ACTION = "code-buddy-firmware-install-v1"
+_AUTHORIZATION_ACTION = "opencode-buddy-firmware-install-v1"
 _AUTHORIZATION_MAX_LIFETIME_SECONDS = 300
 _UINT32_MAX = 0xFFFFFFFF
 _PHASES = {

@@ -30,7 +30,7 @@ def test_fresh_wheel_install_builds_and_codesigns_native_helper(tmp_path):
         capture_output=True,
         text=True,
     )
-    wheel = next(wheelhouse.glob("code_buddy-*.whl"))
+    wheel = next(wheelhouse.glob("opencode_buddy-*.whl"))
     subprocess.run(
         [sys.executable, "-m", "pip", "install", "--no-deps", "--target", str(installed), str(wheel)],
         check=True,
@@ -40,7 +40,7 @@ def test_fresh_wheel_install_builds_and_codesigns_native_helper(tmp_path):
     environment = dict(os.environ)
     environment.pop("PYTHONPATH", None)
     environment.update(HOME=str(home), PYTHONPATH=str(installed))
-    destination = home / ".code-buddy" / "helper" / "CodeBuddyBLEHelper.app"
+    destination = home / ".opencode-buddy" / "helper" / "OpenCodeBuddyBLEHelper.app"
     subprocess.run(
         [
             sys.executable,
@@ -55,7 +55,7 @@ def test_fresh_wheel_install_builds_and_codesigns_native_helper(tmp_path):
         text=True,
     )
 
-    executable = destination / "Contents" / "MacOS" / "CodeBuddyBLEHelper"
+    executable = destination / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper"
     assert executable.is_file() and os.access(executable, os.X_OK)
     subprocess.run(
         ["codesign", "--verify", "--deep", "--strict", str(destination)],

@@ -145,31 +145,31 @@ static void useDefaultTextFont(Canvas& canvas) {
 
 template <typename Canvas>
 static void useSharedFaceAsciiFont(Canvas& canvas) {
-  canvas.setFont(&code_buddy_fonts::JetBrainsMono_Regular8pt7b);
+  canvas.setFont(&opencode_buddy_fonts::JetBrainsMono_Regular8pt7b);
   canvas.setTextSize(1);
 }
 
 template <typename Canvas>
 static void useDashboardStatusFont(Canvas& canvas) {
-  canvas.setFont(&code_buddy_fonts::JetBrainsMono_Regular7pt7b);
+  canvas.setFont(&opencode_buddy_fonts::JetBrainsMono_Regular7pt7b);
   canvas.setTextSize(1);
 }
 
 template <typename Canvas>
 static void useDashboardTimeFont(Canvas& canvas) {
-  canvas.setFont(&code_buddy_fonts::JetBrainsMono_Regular20pt7b);
+  canvas.setFont(&opencode_buddy_fonts::JetBrainsMono_Regular20pt7b);
   canvas.setTextSize(1);
 }
 
 template <typename Canvas>
 static void useDashboardSecondsFont(Canvas& canvas) {
-  canvas.setFont(&code_buddy_fonts::JetBrainsMono_Regular14pt7b);
+  canvas.setFont(&opencode_buddy_fonts::JetBrainsMono_Regular14pt7b);
   canvas.setTextSize(1);
 }
 
 template <typename Canvas>
 static void useDashboardCardFont(Canvas& canvas) {
-  canvas.setFont(&code_buddy_fonts::JetBrainsMono_Bold6pt7b);
+  canvas.setFont(&opencode_buddy_fonts::JetBrainsMono_Bold6pt7b);
   canvas.setTextSize(1);
 }
 
@@ -1694,7 +1694,7 @@ void drawInfo() {
       spr.setTextColor(p.text, p.bg);
       ln("TO PAIR");
       spr.setTextColor(p.textDim, p.bg);
-      ln(" code-buddy");
+      ln(" opencode-buddy");
       y += 4;
       ln("TO STAY LINKED");
       ln(" run opencode");
@@ -1958,7 +1958,7 @@ static void drawValidationScreen(bool inPrompt) {
   spr.setTextSize(1);
   spr.setTextColor(p.text, p.bg);
   spr.setCursor(6, 8);
-  spr.print("CodeBuddy BLE");
+  spr.print("OpenCodeBuddy BLE");
   spr.setTextColor((millis() / 500) % 2 ? GREEN : p.textDim, p.bg);
   spr.setCursor(W - 18, 8);
   spr.print("o");

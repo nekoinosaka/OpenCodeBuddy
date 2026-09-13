@@ -81,9 +81,9 @@ def patch_image_version(path: Path, version: str) -> None:
 
 def _version_from_header(path: Path) -> str:
     text = path.read_text(encoding="utf-8")
-    match = re.search(r'^#define CODE_BUDDY_FIRMWARE_VERSION "([^"]+)"$', text, re.MULTILINE)
+    match = re.search(r'^#define OPENCODE_BUDDY_FIRMWARE_VERSION "([^"]+)"$', text, re.MULTILINE)
     if match is None:
-        raise ValueError("CODE_BUDDY_FIRMWARE_VERSION is missing")
+        raise ValueError("OPENCODE_BUDDY_FIRMWARE_VERSION is missing")
     return match.group(1)
 
 

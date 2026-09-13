@@ -1,6 +1,6 @@
 # Code Review 报告（有罪推定）
 
-- **审查对象**：`opencode_buddy`（本 fork 将 Code Buddy 从 Codex 适配到 OpenCode）相对上游 `upstream/main` 的**全量 diff**
+- **审查对象**：`opencode_buddy`（本 fork 将 OpenCode Buddy 从 Codex 适配到 OpenCode）相对上游 `upstream/main` 的**全量 diff**
 - **审查方法**：对每一处新代码默认"有罪"，先用运行现场的 bug 反推，再逐文件验证
 - **审查范围**：`git diff upstream/main...HEAD`（116 files, +2270 / −6140）
 - **环境**：macOS，OpenCode 1.18.30，M5StickS3 固件（`OpenCode-XXXX`）
@@ -13,16 +13,16 @@
 
 | 编号 | 严重度 | 状态 | 问题 | 位置 |
 | --- | --- | --- | --- | --- |
-| A | **P0** | ✅ 已修并验证 | 审批等待阻塞 `event` hook，并发审批只弹一次、其余卡在电脑端 | `opencode_plugin/code-buddy.js` |
+| A | **P0** | ✅ 已修并验证 | 审批等待阻塞 `event` hook，并发审批只弹一次、其余卡在电脑端 | `opencode_plugin/opencode-buddy.js` |
 | B | **P0** | ✅ 已修 | 会话/消息状态只增不减，长期运行内存泄漏 | `opencode_events.py`、`agent.py` |
 | C | **P0** | ✅ 已修 | `/session` watcher 在真实 TUI 下不可达 | `agent.py`、文档 |
-| D | P1 | ✅ 已修 | 回包方法靠猜（实测 `postSessionIdPermissionsPermissionId` 有效） | `opencode_plugin/code-buddy.js` |
+| D | P1 | ✅ 已修 | 回包方法靠猜（实测 `postSessionIdPermissionsPermissionId` 有效） | `opencode_plugin/opencode-buddy.js` |
 | E | P1 | ✅ 已修 | 回包 `directory` 可能取错 | `agent.py` → 插件 |
 | F | P1 | ✅ 已修 | `__SCAN_ONLY__` 扫描时误连设备 | helper Swift |
 | G | P2 | ✅ 已修 | token 统计 O(n²) 且非单调 | `opencode_events.py` |
 | H | P2 | ✅ 已修 | `respond_permission` 文档/接口不一致；REST 死代码 | `opencode_server.py`、`agent.py` |
 | I | P2 | 不适用 | 仅记录 `type`/`id`，未记录 title | — |
-| J | P2 | ✅ 已修 | 预编译 OTA 固件 `code-buddy-sticks3-app.bin` 仍为旧品牌 | `src/opencode_buddy/firmware/` |
+| J | P2 | ✅ 已修 | 预编译 OTA 固件 `opencode-buddy-sticks3-app.bin` 仍为旧品牌 | `src/opencode_buddy/firmware/` |
 
 ---
 
@@ -32,7 +32,7 @@
 
 **现象（现场复现）**：一次同时出现多个审批（3 个 `read` 各触发一次 `external_directory`），设备上**只弹了一个**，电脑端却**堆了几个**；用户确认设备后，电脑端仍有残留审批。
 
-**根因**：`code-buddy.js` 的 `event` hook 在收到 `permission.asked` 后直接：
+**根因**：`opencode-buddy.js` 的 `event` hook 在收到 `permission.asked` 后直接：
 
 ```js
 const response = await request({ cmd: "permission_ask", permission }, 65000)
@@ -85,11 +85,11 @@ lsof -iTCP -sTCP:LISTEN                    # 无 opencode 监听
 
 **问题**：`replyToOpenCode()` 依次尝试 4 种 SDK 方法（`permission.reply` / `permission.respond` / `postSessionIdPermissionsPermissionId` / `postSessionByIdPermissionsByPermissionId`），用 `result.error` 和异常判断成败。历史上已因方法名变更出现 `client.permission.reply is unavailable`。虽然现在能命中，但**脆弱且难维护**。
 
-**建议**：从日志 `Code Buddy client surface` 确认当前版本真实可用的方法，**固定为一个**并加断言/告警；其余作为显式向后兼容分支。
+**建议**：从日志 `OpenCode Buddy client surface` 确认当前版本真实可用的方法，**固定为一个**并加断言/告警；其余作为显式向后兼容分支。
 
 ### E. 回包 `directory` 可能取错（P1，待修）
 
-`code-buddy.js:92`：
+`opencode-buddy.js:92`：
 
 ```js
 const dir = permission.directory || directory || undefined
@@ -126,7 +126,7 @@ const dir = permission.directory || directory || undefined
 
 ### J. 预编译固件（P2，已知）
 
-`src/opencode_buddy/firmware/code-buddy-sticks3-app.bin` 仍是 Codex 时代产物（含旧品牌字符串），仅影响 **OTA**。USB 烧录链路不受影响。需重编固件后覆盖。
+`src/opencode_buddy/firmware/opencode-buddy-sticks3-app.bin` 仍是 Codex 时代产物（含旧品牌字符串），仅影响 **OTA**。USB 烧录链路不受影响。需重编固件后覆盖。
 
 ---
 
@@ -173,7 +173,7 @@ const dir = permission.directory || directory || undefined
 
 结论：**并发审批缺陷（A）已修复并验证**，且确认该 OpenCode 版本有效的回包方法为 `postSessionIdPermissionsPermissionId`。
 
-> 复盘：中途反复出现"电脑有、设备没有"，根因是**仓库中的插件改动没有同步到 `~/.config/opencode/plugins/`**，OpenCode 重启后加载的仍是旧阻塞版。为此新增 `doctor` 的插件漂移检测（已安装 ≠ 内置时告警），并提示运行 `code-buddy install-opencode-plugin`。
+> 复盘：中途反复出现"电脑有、设备没有"，根因是**仓库中的插件改动没有同步到 `~/.config/opencode/plugins/`**，OpenCode 重启后加载的仍是旧阻塞版。为此新增 `doctor` 的插件漂移检测（已安装 ≠ 内置时告警），并提示运行 `opencode-buddy install-opencode-plugin`。
 
 ---
 

@@ -99,7 +99,7 @@ def test_state_store_preserves_setup_metadata_across_midnight_reset(tmp_path):
             tokens_total=1200,
             active_thread_id="thr_1",
             setup_version=1,
-            helper_app_path="/Users/tester/.code-buddy/helper/CodeBuddyBLEHelper.app",
+            helper_app_path="/Users/tester/.opencode-buddy/helper/OpenCodeBuddyBLEHelper.app",
             service_installed=True,
         )
     )
@@ -109,5 +109,5 @@ def test_state_store_preserves_setup_metadata_across_midnight_reset(tmp_path):
     assert loaded.tokens_today == 0
     assert loaded.tokens_total == 1200
     assert loaded.setup_version == 1
-    assert loaded.helper_app_path == "/Users/tester/.code-buddy/helper/CodeBuddyBLEHelper.app"
+    assert loaded.helper_app_path == "/Users/tester/.opencode-buddy/helper/OpenCodeBuddyBLEHelper.app"
     assert loaded.service_installed is True

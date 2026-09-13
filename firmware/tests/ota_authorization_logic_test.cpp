@@ -20,7 +20,7 @@ static const char* DER_HEX = "3006020101020101";
 
 static OtaAuthorizationInput validAuthorization() {
   OtaAuthorizationInput input = {};
-  input.action = "code-buddy-firmware-install-v1";
+  input.action = "opencode-buddy-firmware-install-v1";
   input.device = "OpenCode-4DAD";
   input.expiresAt = 1720000120;
   input.generation = 9;
@@ -64,7 +64,7 @@ static void testCanonicalBytesMatchHostContract() {
   char canonical[OTA_AUTHORIZATION_MAX_BYTES];
   size_t length = otaAuthorizationCanonicalBytes(input, canonical, sizeof(canonical));
   const char* expected =
-    "{\"action\":\"code-buddy-firmware-install-v1\",\"device\":\"OpenCode-4DAD\","
+    "{\"action\":\"opencode-buddy-firmware-install-v1\",\"device\":\"OpenCode-4DAD\","
     "\"expiresAt\":1720000120,\"generation\":9,\"issuedAt\":1720000000,"
     "\"manifestUrl\":\"https://192.168.44.8:49321/0123456789abcdefghijklmn/manifest.json\","
     "\"nonce\":\"abcdefghijklmnopqrstuvwx\","

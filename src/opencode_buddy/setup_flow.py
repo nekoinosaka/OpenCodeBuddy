@@ -28,7 +28,7 @@ def ensure_helper_app_installed(destination: Path | None = None) -> Path:
     moved_old = False
     try:
         shutil.copytree(source, staging, symlinks=False)
-        executable = staging / "Contents" / "MacOS" / "CodeBuddyBLEHelper"
+        executable = staging / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper"
         if not executable.is_file() or executable.is_symlink() or not os.access(executable, os.X_OK):
             raise RuntimeError("built native BLE helper executable is invalid")
         subprocess.run(
@@ -63,12 +63,12 @@ def opencode_plugin_dir() -> Path:
 
 
 def opencode_plugin_path() -> Path:
-    return opencode_plugin_dir() / "code-buddy.js"
+    return opencode_plugin_dir() / "opencode-buddy.js"
 
 
 def bundled_opencode_plugin_text() -> str:
     source = resources.files("opencode_buddy").joinpath(
-        "opencode_plugin", "code-buddy.js"
+        "opencode_plugin", "opencode-buddy.js"
     )
     with source.open("r", encoding="utf-8") as handle:
         return handle.read()
@@ -99,7 +99,7 @@ def install_opencode_plugin(destination: Path | None = None) -> Path:
 
 def bundled_firmware_resource():
     return resources.files("opencode_buddy").joinpath(
-        "firmware", "code-buddy-sticks3-app.bin"
+        "firmware", "opencode-buddy-sticks3-app.bin"
     )
 
 

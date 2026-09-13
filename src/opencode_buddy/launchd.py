@@ -9,7 +9,7 @@ from typing import Optional
 
 
 def launchd_label() -> str:
-    return "com.codebuddy.agent"
+    return "com.opencodebuddy.agent"
 
 
 def launchd_plist_path() -> Path:

@@ -1,6 +1,6 @@
-# Code Buddy Firmware
+# OpenCode Buddy Firmware
 
-This firmware targets the M5Stack StickS3 and turns it into a Code Buddy display
+This firmware targets the M5Stack StickS3 and turns it into a OpenCode Buddy display
 and approval device. Managed OpenCode CLI sessions support approvals, while OpenCode
 Desktop contributes read-only task status and completion cues through the host.
 
@@ -8,7 +8,7 @@ Desktop contributes read-only task status and completion cues through the host.
 
 ## User Flashing Path
 
-1. Download `code-buddy-sticks3-v{version}-full.bin` from GitHub Releases.
+1. Download `opencode-buddy-sticks3-v{version}-full.bin` from GitHub Releases.
 2. Flash that merged image onto the StickS3 at address `0x0`.
 
 Primary path:
@@ -18,13 +18,13 @@ Primary path:
 Fallback path:
 
 ```bash
-esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.41-full.bin
+esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 opencode-buddy-sticks3-v0.1.41-full.bin
 ```
 
 After flashing, go back to the Mac and run:
 
 ```bash
-code-buddy
+opencode-buddy
 ```
 
 That will request Bluetooth permission, pair the StickS3, sync time, and finish the Mac-side setup.
@@ -50,7 +50,7 @@ font. The subset can be regenerated with
 stored in `licenses/JetBrainsMono-OFL.txt`.
 
 The OTA-capable firmware can receive signed app-only updates from
-`code-buddy firmware update`. **Settings > auto ota** enables automatic trusted
+`opencode-buddy firmware update`. **Settings > auto ota** enables automatic trusted
 updates. Full recovery images remain USB-only and must be written at `0x0`.
 
 ## Developer Build Path
@@ -73,7 +73,7 @@ Build the merged GitHub Release artifact:
 ../scripts/build-firmware-release.sh
 ```
 
-The script writes both `dist/firmware/code-buddy-sticks3-v{version}-full.bin`
+The script writes both `dist/firmware/opencode-buddy-sticks3-v{version}-full.bin`
 for USB flashing at `0x0` and `*-app.bin` for OTA.
 
 ## Controls

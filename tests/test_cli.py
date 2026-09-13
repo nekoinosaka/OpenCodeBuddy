@@ -108,7 +108,7 @@ def test_pair_resends_time_sync_before_disconnect(monkeypatch):
     monkeypatch.setattr(cli.asyncio, "sleep", fake_sleep)
 
     args = argparse.Namespace(
-        state_path="/tmp/codebuddy-state.json",
+        state_path="/tmp/opencodebuddy-state.json",
         device=None,
         timeout=4.0,
         command="pair",
@@ -167,7 +167,7 @@ def test_pair_prompts_for_choice_when_multiple_devices_found(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda _: "2")
 
     args = argparse.Namespace(
-        state_path="/tmp/codebuddy-state.json",
+        state_path="/tmp/opencodebuddy-state.json",
         device=None,
         timeout=4.0,
         command="pair",
@@ -182,10 +182,10 @@ def test_pair_prompts_for_choice_when_multiple_devices_found(monkeypatch):
 
 def test_setup_installs_opencode_plugin_and_records_helper(tmp_path, monkeypatch):
     state_path = tmp_path / "state.json"
-    helper_path = tmp_path / "helper" / "CodeBuddyBLEHelper.app"
+    helper_path = tmp_path / "helper" / "OpenCodeBuddyBLEHelper.app"
     helper_path.mkdir(parents=True)
-    plugin_path = tmp_path / "plugins" / "code-buddy.js"
-    selected = argparse.Namespace(device_id="dev-1", name="CodeBuddy-1234")
+    plugin_path = tmp_path / "plugins" / "opencode-buddy.js"
+    selected = argparse.Namespace(device_id="dev-1", name="OpenCodeBuddy-1234")
     plugin_calls = []
 
     async def fake_resolve_selected_device(args, current):
@@ -231,7 +231,7 @@ def test_setup_installs_opencode_plugin_and_records_helper(tmp_path, monkeypatch
 def test_setup_fails_before_pairing_when_bundled_firmware_is_missing(
     tmp_path, monkeypatch, capsys
 ):
-    helper_path = tmp_path / "helper" / "CodeBuddyBLEHelper.app"
+    helper_path = tmp_path / "helper" / "OpenCodeBuddyBLEHelper.app"
     helper_path.mkdir(parents=True)
     pairing_calls = []
 
@@ -254,12 +254,12 @@ def test_setup_fails_before_pairing_when_bundled_firmware_is_missing(
 
     assert result == 1
     assert pairing_calls == []
-    assert "Reinstall Code Buddy" in capsys.readouterr().err
+    assert "Reinstall OpenCode Buddy" in capsys.readouterr().err
 
 
 def test_status_prefers_live_agent_status(monkeypatch, capsys):
     def fake_agent_status(state_path):
-        assert state_path == "/tmp/codebuddy-state.json"
+        assert state_path == "/tmp/opencodebuddy-state.json"
         return {
             "ok": True,
             "state": {
@@ -271,7 +271,7 @@ def test_status_prefers_live_agent_status(monkeypatch, capsys):
 
     monkeypatch.setattr(cli, "_agent_status", fake_agent_status)
 
-    exit_code = cli._status(argparse.Namespace(state_path="/tmp/codebuddy-state.json"))
+    exit_code = cli._status(argparse.Namespace(state_path="/tmp/opencodebuddy-state.json"))
 
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
@@ -309,7 +309,7 @@ def test_doctor_reports_loaded_agent_that_is_not_running():
         {
             "problem": "The background agent is repeatedly exiting.",
             "reason": "Launchd is loaded, but the agent is not running (last exit status: 1).",
-            "next": "Run `code-buddy repair`; if it recurs, inspect the launchd error log.",
+            "next": "Run `opencode-buddy repair`; if it recurs, inspect the launchd error log.",
         }
     ]
 
@@ -435,7 +435,7 @@ def test_firmware_update_sends_cancel_on_keyboard_interrupt(monkeypatch, tmp_pat
 
     assert result == 130
     assert requests[-1] == {"cmd": "ota_cancel", "nonce": "n"}
-    assert "cancelled on Code Buddy" in capsys.readouterr().err
+    assert "cancelled on OpenCode Buddy" in capsys.readouterr().err
 
 
 def test_firmware_update_task_cancellation_shields_bounded_device_cancel(
@@ -516,7 +516,7 @@ def test_firmware_update_does_not_claim_unconfirmed_cancel(monkeypatch, tmp_path
     assert result == 130
     error = capsys.readouterr().err
     assert "already committed" in error
-    assert "cancelled on Code Buddy" not in error
+    assert "cancelled on OpenCode Buddy" not in error
 
 
 def test_firmware_update_real_sigint_exits_130_and_requests_cancel(tmp_path):
@@ -583,7 +583,7 @@ def test_firmware_update_missing_installed_default_fails_before_agent_request(
 
     assert result == 1
     assert requests == []
-    assert "code-buddy repair" in capsys.readouterr().err
+    assert "opencode-buddy repair" in capsys.readouterr().err
 
 
 def test_version_flag_reports_project_version(capsys):
@@ -591,7 +591,7 @@ def test_version_flag_reports_project_version(capsys):
         cli.main(["--version"])
 
     assert exc_info.value.code == 0
-    assert capsys.readouterr().out.strip() == f"code-buddy {_project_version()}"
+    assert capsys.readouterr().out.strip() == f"opencode-buddy {_project_version()}"
 
 
 def test_doctor_reports_out_of_date_plugin():

@@ -8,19 +8,19 @@
 </p>
 
 <p align="center">
-  <img src="screenshots/cover.webp" alt="Code Buddy cover" width="100%" />
+  <img src="screenshots/cover.webp" alt="OpenCode Buddy cover" width="100%" />
 </p>
 
-<h1 align="center">Code Buddy</h1>
+<h1 align="center">OpenCode Buddy</h1>
 
 <p align="center">
   A StickS3 companion for <a href="https://opencode.ai">OpenCode</a>, adapted from
   <a href="https://github.com/anthropics/claude-desktop-buddy">Claude Desktop Buddy</a>
-  and <a href="https://github.com/CharlexH/CodeBuddy">CodeBuddy</a>.
+  and <a href="https://github.com/CharlexH/OpenCodeBuddy">OpenCodeBuddy</a>.
 </p>
 
 <p align="center">
-  Flash the device once, run <code>code-buddy</code> once on macOS, then keep using
+  Flash the device once, run <code>opencode-buddy</code> once on macOS, then keep using
   <code>opencode</code> normally while approvals and live session status move to dedicated hardware.
 </p>
 
@@ -33,15 +33,15 @@
 - A macOS bridge that pairs with the StickS3, syncs time, installs the native BLE helper, and installs an OpenCode plugin.
 - An OpenCode plugin that forwards live session events and routes permission prompts to the device.
 - A StickS3 firmware build with status, approval, settings, and offline screens.
-- A daily workflow designed to stay out of the way: run `code-buddy` once, then just use `opencode`.
+- A daily workflow designed to stay out of the way: run `opencode-buddy` once, then just use `opencode`.
 
 ## How it works
 
-Code Buddy has three moving parts:
+OpenCode Buddy has three moving parts:
 
 1. **Device firmware** advertises the Nordic UART Service as `OpenCode-XXXX` and renders the pet, stats, and approval screens.
-2. **`code-buddy` agent** runs as a launchd service, owns the Bluetooth link, and keeps the device snapshot updated.
-3. **OpenCode plugin** (`~/.config/opencode/plugins/code-buddy.js`) runs inside OpenCode. On startup it hands the agent the server URL, forwards bus events (`session.status`, `message.updated`, `message.part.updated`, `permission.*`), and implements the `permission.ask` hook so the device can approve or deny.
+2. **`opencode-buddy` agent** runs as a launchd service, owns the Bluetooth link, and keeps the device snapshot updated.
+3. **OpenCode plugin** (`~/.config/opencode/plugins/opencode-buddy.js`) runs inside OpenCode. On startup it hands the agent the server URL, forwards bus events (`session.status`, `message.updated`, `message.part.updated`, `permission.*`), and implements the `permission.ask` hook so the device can approve or deny.
 
 When a permission prompt is pending, it is shown on the StickS3: **A** approves once, **B** denies. If the device is offline, the prompt falls back to the normal OpenCode UI (the agent waits up to 60 seconds, then returns `ask`).
 
@@ -51,7 +51,7 @@ Session status and token totals are projected from live plugin events. The optio
 
 ### 1. Flash the StickS3
 
-Download `code-buddy-sticks3-v{version}-full.bin` from Releases and flash it at `0x0`.
+Download `opencode-buddy-sticks3-v{version}-full.bin` from Releases and flash it at `0x0`.
 
 <details>
 <summary>Flash commands</summary>
@@ -59,7 +59,7 @@ Download `code-buddy-sticks3-v{version}-full.bin` from Releases and flash it at 
 Fallback:
 
 ```bash
-esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.45-full.bin
+esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 opencode-buddy-sticks3-v0.1.45-full.bin
 ```
 
 Developer release build:
@@ -78,20 +78,20 @@ OTA. Never pass the merged full image to the OTA command.
 Build from source:
 
 ```bash
-git clone https://github.com/nekoinosaka/CodeBuddy.git
-cd CodeBuddy
+git clone https://github.com/nekoinosaka/OpenCodeBuddy.git
+cd OpenCodeBuddy
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
-.venv/bin/code-buddy
+.venv/bin/opencode-buddy
 ```
 
-On first run, Code Buddy will:
+On first run, OpenCode Buddy will:
 
 - install the native Bluetooth helper
 - pair with an `OpenCode-*` device
 - sync device time
 - install the launchd agent
-- install the OpenCode plugin at `~/.config/opencode/plugins/code-buddy.js`
+- install the OpenCode plugin at `~/.config/opencode/plugins/opencode-buddy.js`
 
 Host-only updates do not require reflashing when the installed firmware remains
 protocol-compatible. Features that change the display, sound, or OTA runtime do
@@ -103,32 +103,32 @@ require the matching firmware release.
 opencode
 ```
 
-Restart OpenCode after setup so it loads the plugin. From there, Code Buddy keeps the bridge alive and shows approval prompts on the StickS3 while you keep your normal flow.
+Restart OpenCode after setup so it loads the plugin. From there, OpenCode Buddy keeps the bridge alive and shows approval prompts on the StickS3 while you keep your normal flow.
 
 Session events arrive through the plugin, so no shell shim or wrapper is needed — run `opencode` exactly as you always do.
 
 ### Wireless firmware updates
 
 After the OTA-capable bootstrap has been flashed once and Wi-Fi has been
-provisioned from Settings, open **Settings > OTA update** on Code Buddy, then
+provisioned from Settings, open **Settings > OTA update** on OpenCode Buddy, then
 run:
 
 ```bash
-code-buddy firmware update
+opencode-buddy firmware update
 ```
 
 For a development build, select the app-only image explicitly:
 
 ```bash
-code-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/firmware.bin
+opencode-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/firmware.bin
 ```
 
 The background agent remains the sole Bluetooth owner. It signs an immutable
-one-time manifest using the already-pinned trust under `~/.code-buddy/ota`,
+one-time manifest using the already-pinned trust under `~/.opencode-buddy/ota`,
 serves the image over short-lived local HTTPS, and waits for physical A-button
 confirmation. B or Ctrl-C cancels before the boot slot is committed.
 
-The native BLE helper runs as a background macOS agent during normal use, so reconnect attempts should not open a helper window or steal focus. macOS may still show the first Bluetooth permission prompt; that system prompt cannot be skipped. For helper debugging, start it with `CODE_BUDDY_BLE_HELPER_DEBUG_WINDOW=1` to show the event log window.
+The native BLE helper runs as a background macOS agent during normal use, so reconnect attempts should not open a helper window or steal focus. macOS may still show the first Bluetooth permission prompt; that system prompt cannot be skipped. For helper debugging, start it with `OPENCODE_BUDDY_BLE_HELPER_DEBUG_WINDOW=1` to show the event log window.
 
 ## Controls
 
@@ -200,9 +200,9 @@ Notes:
 ## Recovery
 
 ```bash
-code-buddy doctor
-code-buddy repair
-code-buddy uninstall
+opencode-buddy doctor
+opencode-buddy repair
+opencode-buddy uninstall
 ```
 
 `doctor` explains what is wrong, why it happened, and what to do next.
@@ -213,7 +213,7 @@ code-buddy uninstall
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
-.venv/bin/code-buddy
+.venv/bin/opencode-buddy
 ```
 
 Verification:

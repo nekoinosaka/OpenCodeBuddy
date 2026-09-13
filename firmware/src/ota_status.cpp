@@ -27,7 +27,7 @@ void writeStatus(
   char payload[384] = {};
   size_t length = otaStatusBuildJson(
     payload, sizeof(payload), nonce, generation, phase, percent,
-    CODE_BUDDY_FIRMWARE_VERSION, otaBootHealthStatusLabel(), error,
+    OPENCODE_BUDDY_FIRMWARE_VERSION, otaBootHealthStatusLabel(), error,
     cancelApplied
   );
   if (!length) return;

@@ -20,7 +20,7 @@ constexpr uint8_t MAX_SCAN_RESULTS = 12;
 
 class PreferencesCredentialStore : public WifiCredentialStore {
  public:
-  bool begin(bool readOnly) override { return prefs_.begin("codebuddy_wifi", readOnly); }
+  bool begin(bool readOnly) override { return prefs_.begin("opencodebuddy_wifi", readOnly); }
   void end() override { prefs_.end(); }
   bool putString(const char* key, const char* value) override {
     return prefs_.putString(key, value) == strlen(value);
@@ -122,10 +122,10 @@ String portalPage(const char* notice = nullptr) {
   String html;
   html.reserve(4096);
   html += F("<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'>"
-            "<title>CodeBuddy Wi-Fi</title><style>body{font:16px system-ui;max-width:32rem;"
+            "<title>OpenCodeBuddy Wi-Fi</title><style>body{font:16px system-ui;max-width:32rem;"
             "margin:2rem auto;padding:0 1rem;background:#07110d;color:#e7fff2}"
             "input,select,button{box-sizing:border-box;width:100%;padding:.75rem;margin:.35rem 0}"
-            "button{background:#52e889;border:0;font-weight:700}</style><h1>CodeBuddy Wi-Fi</h1>");
+            "button{background:#52e889;border:0;font-weight:700}</style><h1>OpenCodeBuddy Wi-Fi</h1>");
   if (notice && notice[0]) {
     char escaped[192]; wifiHtmlEscape(notice, escaped, sizeof(escaped));
     html += F("<p>"); html += escaped; html += F("</p>");
@@ -182,7 +182,7 @@ void handlePortalComplete() {
   WiFi.begin(pendingSsid, pendingPassword);
   sendHttp(portalClient, 202, "text/html",
            String("<!doctype html><meta name=viewport content='width=device-width'>"
-                  "<p>Connecting CodeBuddy... Check the device screen.</p>"));
+                  "<p>Connecting OpenCodeBuddy... Check the device screen.</p>"));
 }
 
 void pollPortalHttp(uint32_t now) {
@@ -242,7 +242,7 @@ void beginSavedConnection() {
   if (!loaded && activeCredentials.slot == 0xff &&
       wifiCredentialMayUseLegacy(credentialStore)) {
     Preferences legacy;
-    if (legacy.begin("codebuddy_wifi", true)) {
+    if (legacy.begin("opencodebuddy_wifi", true)) {
       bool keysPresent = legacy.isKey("ssid") && legacy.isKey("password");
       size_t sn = legacy.getString("ssid", connection.ssid, sizeof(connection.ssid));
       size_t pn = legacy.getString("password", connection.password, sizeof(connection.password));
@@ -330,7 +330,7 @@ void wifiManagerBegin(const char* deviceSuffix) {
       Preferences legacy;
       char legacyPassword[64] = {};
       bool keysPresent = false;
-      if (legacy.begin("codebuddy_wifi", true)) {
+      if (legacy.begin("opencodebuddy_wifi", true)) {
         keysPresent = legacy.isKey("ssid") && legacy.isKey("password");
         legacy.getString("ssid", savedSsid, sizeof(savedSsid));
         legacy.getString("password", legacyPassword, sizeof(legacyPassword));
@@ -348,7 +348,7 @@ void wifiManagerBegin(const char* deviceSuffix) {
     }
   }
   runtime = wifiInitialState(activeCredentials.valid);
-  snprintf(apSsid, sizeof(apSsid), "CodeBuddy-%s", deviceSuffix ? deviceSuffix : "SETUP");
+  snprintf(apSsid, sizeof(apSsid), "OpenCodeBuddy-%s", deviceSuffix ? deviceSuffix : "SETUP");
   if (runtime.provisioned) beginSavedConnection();
   else WiFi.mode(WIFI_OFF);
 }
@@ -388,7 +388,7 @@ void wifiManagerCancelProvisioning() {
 void wifiManagerForget() {
   cleanupProvisioningTransport();
   Preferences cleanup;
-  if (cleanup.begin("codebuddy_wifi", false)) {
+  if (cleanup.begin("opencodebuddy_wifi", false)) {
     cleanup.clear();
     cleanup.end();
   }

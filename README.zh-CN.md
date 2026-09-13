@@ -8,19 +8,19 @@
 </p>
 
 <p align="center">
-  <img src="screenshots/cover.webp" alt="Code Buddy cover" width="100%" />
+  <img src="screenshots/cover.webp" alt="OpenCode Buddy cover" width="100%" />
 </p>
 
-<h1 align="center">Code Buddy</h1>
+<h1 align="center">OpenCode Buddy</h1>
 
 <p align="center">
   一个基于 StickS3 的 <a href="https://opencode.ai">OpenCode</a> 硬件伙伴，改编自
   <a href="https://github.com/anthropics/claude-desktop-buddy">Claude Desktop Buddy</a>
-  和 <a href="https://github.com/CharlexH/CodeBuddy">CodeBuddy</a>。
+  和 <a href="https://github.com/CharlexH/OpenCodeBuddy">OpenCodeBuddy</a>。
 </p>
 
 <p align="center">
-  给设备刷一次固件，在 macOS 上运行一次 <code>code-buddy</code>，之后照常使用 <code>opencode</code>，审批提示和会话状态就会转移到独立硬件上。
+  给设备刷一次固件，在 macOS 上运行一次 <code>opencode-buddy</code>，之后照常使用 <code>opencode</code>，审批提示和会话状态就会转移到独立硬件上。
 </p>
 
 > 如果你想自己做硬件客户端，可以看 [firmware/REFERENCE.md](firmware/REFERENCE.md) 里的 BLE 协议和 JSON 负载定义。
@@ -32,15 +32,15 @@
 - 一个 macOS 主机桥接层，负责与 StickS3 配对、同步时间、安装原生 BLE helper，并安装 OpenCode 插件。
 - 一个 OpenCode 插件，负责转发实时会话事件，并把审批请求路由到设备。
 - 一套 StickS3 固件，包含状态页、审批页、设置页和离线页。
-- 一套尽量不打扰日常工作的流程：先跑一次 `code-buddy`，之后直接用 `opencode`。
+- 一套尽量不打扰日常工作的流程：先跑一次 `opencode-buddy`，之后直接用 `opencode`。
 
 ## 工作原理
 
-Code Buddy 由三部分组成：
+OpenCode Buddy 由三部分组成：
 
 1. **设备固件**：以 `OpenCode-XXXX` 广播 Nordic UART Service，渲染宠物、状态和审批界面。
-2. **`code-buddy` agent**：作为 launchd 服务常驻，独占蓝牙连接，并持续把快照推送到设备。
-3. **OpenCode 插件**（`~/.config/opencode/plugins/code-buddy.js`）：运行在 OpenCode 进程内。启动时把 server URL 交给 agent，转发总线事件（`session.status`、`message.updated`、`message.part.updated`、`permission.*`），并实现 `permission.ask` hook，让设备可以批准或拒绝。
+2. **`opencode-buddy` agent**：作为 launchd 服务常驻，独占蓝牙连接，并持续把快照推送到设备。
+3. **OpenCode 插件**（`~/.config/opencode/plugins/opencode-buddy.js`）：运行在 OpenCode 进程内。启动时把 server URL 交给 agent，转发总线事件（`session.status`、`message.updated`、`message.part.updated`、`permission.*`），并实现 `permission.ask` hook，让设备可以批准或拒绝。
 
 有待审批请求时，StickS3 会显示提示：**A** 批准一次，**B** 拒绝。设备不在线时，会自动回退到 OpenCode 原生界面（agent 最多等待 60 秒后返回 `ask`）。
 
@@ -50,7 +50,7 @@ Code Buddy 由三部分组成：
 
 ### 1. 给 StickS3 刷机
 
-从 Releases 下载 `code-buddy-sticks3-v{version}-full.bin`，然后写入到 `0x0`。
+从 Releases 下载 `opencode-buddy-sticks3-v{version}-full.bin`，然后写入到 `0x0`。
 
 <details>
 <summary>刷写命令</summary>
@@ -58,7 +58,7 @@ Code Buddy 由三部分组成：
 兜底方式：
 
 ```bash
-esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 code-buddy-sticks3-v0.1.45-full.bin
+esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 opencode-buddy-sticks3-v0.1.45-full.bin
 ```
 
 开发者本地生成 release 镜像：
@@ -75,20 +75,20 @@ esptool --chip esp32s3 --port /dev/cu.usbmodem101 --baud 460800 write_flash 0x0 
 从源码安装：
 
 ```bash
-git clone https://github.com/nekoinosaka/CodeBuddy.git
-cd CodeBuddy
+git clone https://github.com/nekoinosaka/OpenCodeBuddy.git
+cd OpenCodeBuddy
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
-.venv/bin/code-buddy
+.venv/bin/opencode-buddy
 ```
 
-首次运行时，Code Buddy 会：
+首次运行时，OpenCode Buddy 会：
 
 - 安装原生蓝牙 helper
 - 与 `OpenCode-*` 设备配对
 - 同步设备时间
 - 安装 launchd agent
-- 把 OpenCode 插件安装到 `~/.config/opencode/plugins/code-buddy.js`
+- 把 OpenCode 插件安装到 `~/.config/opencode/plugins/opencode-buddy.js`
 
 仅主机侧的更新在协议仍兼容时不需要重新刷机；涉及屏幕、声音或 OTA 运行时的功能，需要配套版本的设备固件。
 
@@ -98,7 +98,7 @@ python3 -m venv .venv
 opencode
 ```
 
-安装完成后请重启 OpenCode，让它加载插件。此后你可以保持原来的使用方式，Code Buddy 会在后台维持桥接，并把审批提示显示到 StickS3 上。
+安装完成后请重启 OpenCode，让它加载插件。此后你可以保持原来的使用方式，OpenCode Buddy 会在后台维持桥接，并把审批提示显示到 StickS3 上。
 
 会话事件由插件转发，因此**不需要任何 shim 或 wrapper**，像平时一样运行 `opencode` 即可。
 
@@ -107,18 +107,18 @@ opencode
 首次通过 USB 刷入支持 OTA 的完整固件，并在设备设置中配置 Wi-Fi 后，打开 **Settings > OTA update**，然后运行：
 
 ```bash
-code-buddy firmware update
+opencode-buddy firmware update
 ```
 
 开发固件可以显式指定 app-only 镜像：
 
 ```bash
-code-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/firmware.bin
+opencode-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/firmware.bin
 ```
 
 主机代理会作为唯一的蓝牙所有者，为一次性不可变清单签名，通过短时本地 HTTPS 提供 app-only 镜像，并等待设备 A 键确认。提交启动分区前按 B 或 Ctrl-C 可以取消。
 
-正常使用时，原生 BLE helper 会作为 macOS 后台 agent 运行，所以重连过程不应该再打开 helper 窗口或抢走焦点。macOS 首次蓝牙权限确认仍可能出现，这是系统权限弹窗，不能跳过。如果需要调试 helper 事件，可以用 `CODE_BUDDY_BLE_HELPER_DEBUG_WINDOW=1` 打开事件日志窗口。
+正常使用时，原生 BLE helper 会作为 macOS 后台 agent 运行，所以重连过程不应该再打开 helper 窗口或抢走焦点。macOS 首次蓝牙权限确认仍可能出现，这是系统权限弹窗，不能跳过。如果需要调试 helper 事件，可以用 `OPENCODE_BUDDY_BLE_HELPER_DEBUG_WINDOW=1` 打开事件日志窗口。
 
 ## 按键说明
 
@@ -190,9 +190,9 @@ code-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/firmwa
 ## 恢复命令
 
 ```bash
-code-buddy doctor
-code-buddy repair
-code-buddy uninstall
+opencode-buddy doctor
+opencode-buddy repair
+opencode-buddy uninstall
 ```
 
 `doctor` 会告诉你哪里出了问题、为什么会这样，以及下一步应该怎么做。
@@ -203,7 +203,7 @@ code-buddy uninstall
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
-.venv/bin/code-buddy
+.venv/bin/opencode-buddy
 ```
 
 验证命令：

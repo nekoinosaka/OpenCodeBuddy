@@ -23,7 +23,7 @@ private struct Config {
         }
 
         guard let session = take("--session-dir") else {
-            throw NSError(domain: "CodeBuddyBLEHelper", code: 1, userInfo: [
+            throw NSError(domain: "OpenCodeBuddyBLEHelper", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Missing --session-dir",
             ])
         }
@@ -62,7 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CBCentralManagerDelega
     private var ready = false
     private var stopping = false
     private var showsDebugWindow: Bool {
-        ProcessInfo.processInfo.environment["CODE_BUDDY_BLE_HELPER_DEBUG_WINDOW"] == "1"
+        ProcessInfo.processInfo.environment["OPENCODE_BUDDY_BLE_HELPER_DEBUG_WINDOW"] == "1"
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -71,7 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CBCentralManagerDelega
             try FileManager.default.createDirectory(at: config.commandsDir, withIntermediateDirectories: true)
             try Data().write(to: config.eventsURL, options: .atomic)
         } catch {
-            fputs("CodeBuddyBLEHelper launch failed: \(error)\n", stderr)
+            fputs("OpenCodeBuddyBLEHelper launch failed: \(error)\n", stderr)
             NSApp.terminate(nil)
             return
         }
@@ -394,7 +394,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CBCentralManagerDelega
             backing: .buffered,
             defer: false
         )
-        debugWindow.title = "CodeBuddy BLE Helper"
+        debugWindow.title = "OpenCodeBuddy BLE Helper"
         let scroll = NSScrollView(frame: frame)
         scroll.hasVerticalScroller = true
         scroll.autoresizingMask = [.width, .height]
@@ -435,11 +435,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CBCentralManagerDelega
 }
 
 @main
-struct CodeBuddyBLEHelperMain {
+struct OpenCodeBuddyBLEHelperMain {
     static func main() {
         let app = NSApplication.shared
         let delegate = AppDelegate()
-        let showsDebugWindow = ProcessInfo.processInfo.environment["CODE_BUDDY_BLE_HELPER_DEBUG_WINDOW"] == "1"
+        let showsDebugWindow = ProcessInfo.processInfo.environment["OPENCODE_BUDDY_BLE_HELPER_DEBUG_WINDOW"] == "1"
         app.setActivationPolicy(showsDebugWindow ? .regular : .accessory)
         app.delegate = delegate
         app.run()

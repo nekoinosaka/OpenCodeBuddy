@@ -31,9 +31,9 @@ def _application_image(version: str = "0.1.4") -> bytes:
 
 def test_is_setup_complete_requires_metadata_runtime_and_plugin(tmp_path, monkeypatch):
     state_path = tmp_path / "state.json"
-    helper_path = tmp_path / "helper" / "CodeBuddyBLEHelper.app"
+    helper_path = tmp_path / "helper" / "OpenCodeBuddyBLEHelper.app"
     helper_path.mkdir(parents=True)
-    plugin_path = tmp_path / "plugins" / "code-buddy.js"
+    plugin_path = tmp_path / "plugins" / "opencode-buddy.js"
     setup_flow.install_opencode_plugin(plugin_path)
     monkeypatch.setattr(setup_flow, "opencode_plugin_path", lambda: plugin_path)
 
@@ -58,7 +58,7 @@ def test_is_setup_complete_rejects_missing_required_state():
 
 
 def test_install_firmware_artifact_copies_release_app_image_without_following_symlink(tmp_path):
-    source = tmp_path / "dist" / "code-buddy-sticks3-app.bin"
+    source = tmp_path / "dist" / "opencode-buddy-sticks3-app.bin"
     source.parent.mkdir()
     source.write_bytes(_application_image())
     destination = tmp_path / "runtime" / "firmware.bin"
@@ -101,8 +101,8 @@ def test_install_firmware_artifact_reads_the_bundled_package_resource(tmp_path):
 
 
 def _fake_helper_app(root: Path, marker: bytes) -> Path:
-    app = root / "CodeBuddyBLEHelper.app"
-    executable = app / "Contents" / "MacOS" / "CodeBuddyBLEHelper"
+    app = root / "OpenCodeBuddyBLEHelper.app"
+    executable = app / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper"
     executable.parent.mkdir(parents=True)
     executable.write_bytes(marker)
     executable.chmod(0o755)
@@ -118,7 +118,7 @@ def test_helper_install_refreshes_existing_app_atomically(tmp_path, monkeypatch)
 
     assert setup_flow.ensure_helper_app_installed(destination) == destination
 
-    assert (destination / "Contents" / "MacOS" / "CodeBuddyBLEHelper").read_bytes() == b"new"
+    assert (destination / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper").read_bytes() == b"new"
 
 
 def test_helper_install_failure_preserves_previous_known_good_app(tmp_path, monkeypatch):
@@ -132,7 +132,7 @@ def test_helper_install_failure_preserves_previous_known_good_app(tmp_path, monk
     with pytest.raises(RuntimeError, match="swift build failed"):
         setup_flow.ensure_helper_app_installed(destination)
 
-    assert (destination / "Contents" / "MacOS" / "CodeBuddyBLEHelper").read_bytes() == b"old"
+    assert (destination / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper").read_bytes() == b"old"
 
 
 def test_helper_install_replace_failure_restores_previous_app(tmp_path, monkeypatch):
@@ -155,4 +155,4 @@ def test_helper_install_replace_failure_restores_previous_app(tmp_path, monkeypa
     with pytest.raises(OSError, match="atomic install failure"):
         setup_flow.ensure_helper_app_installed(destination)
 
-    assert (destination / "Contents" / "MacOS" / "CodeBuddyBLEHelper").read_bytes() == b"old"
+    assert (destination / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper").read_bytes() == b"old"

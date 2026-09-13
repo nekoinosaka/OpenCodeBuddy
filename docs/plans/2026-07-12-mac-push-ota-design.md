@@ -2,17 +2,17 @@
 
 ## Goal
 
-After one final USB bootstrap, allow the user to run `code-buddy firmware update` on the paired Mac and install a firmware update on StickS3 without USB. The Mac initiates the operation, BLE coordinates it, Wi-Fi carries the application image, and the device independently authenticates, stages, verifies, boots, and either accepts or rolls back the image.
+After one final USB bootstrap, allow the user to run `opencode-buddy firmware update` on the paired Mac and install a firmware update on StickS3 without USB. The Mac initiates the operation, BLE coordinates it, Wi-Fi carries the application image, and the device independently authenticates, stages, verifies, boots, and either accepts or rolls back the image.
 
 ## Chosen approach
 
-Use a short-lived HTTPS update server inside the existing `code-buddy` agent. This is preferable to BLE bulk transfer because the current NUS protocol has no resumable application acknowledgements and is slower for a roughly 2 MB image. It is preferable to a public update site for the first implementation because Code Buddy already depends on the paired Mac and no domain, cloud bucket, or CI secret is required.
+Use a short-lived HTTPS update server inside the existing `opencode-buddy` agent. This is preferable to BLE bulk transfer because the current NUS protocol has no resumable application acknowledgements and is slower for a roughly 2 MB image. It is preferable to a public update site for the first implementation because OpenCode Buddy already depends on the paired Mac and no domain, cloud bucket, or CI secret is required.
 
 USB remains the immutable recovery path. The currently connected device receives the OTA-capable bootstrap once over USB; all subsequent application updates use the Mac-local path.
 
 ## Trust and keys
 
-Setup creates two independent P-256 key pairs outside the repository under `~/.code-buddy/ota/keys`, with directory mode `0700` and private-key mode `0600`:
+Setup creates two independent P-256 key pairs outside the repository under `~/.opencode-buddy/ota/keys`, with directory mode `0700` and private-key mode `0600`:
 
 - a local certificate authority used only to issue a short-lived HTTPS leaf certificate for the Mac's current LAN IP;
 - a firmware-manifest signing key used to sign the exact canonical manifest bytes.
@@ -24,7 +24,7 @@ TLS authenticates the local Mac endpoint. The detached manifest signature authen
 ## User flow
 
 1. In Settings, selecting Wi-Fi with no saved network starts a ten-minute WPA2 SoftAP provisioning session. The display shows the random AP password and local setup URL. A small captive portal accepts SSID/password from the Mac; the physical action and random AP password are the confidentiality boundary. Credentials are stored only in the ESP Wi-Fi/NVS namespace and can be forgotten on-device.
-2. `code-buddy firmware update [firmware.bin]` selects or builds an app-only image, derives its version/size/SHA-256, creates canonical manifest bytes, and signs them.
+2. `opencode-buddy firmware update [firmware.bin]` selects or builds an app-only image, derives its version/size/SHA-256, creates canonical manifest bytes, and signs them.
 3. The agent selects the active private LAN address, issues a short-lived certificate containing that IP in its SAN, binds a one-time HTTPS server, and creates an unguessable URL token.
 4. The agent sends a small BLE `ota_offer` containing version, size, URL, and manifest signature metadata. No firmware bytes or Wi-Fi credentials travel over BLE.
 5. The device displays the version and size. Only an A-button confirmation begins network or flash work; B cancels.

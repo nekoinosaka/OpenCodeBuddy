@@ -1,15 +1,15 @@
 # Hardware Buddy BLE Protocol
 
-This is the wire protocol OpenCode Buddy speaks over Bluetooth LE.
+This is the wire protocol OpenOpenCode Buddy speaks over Bluetooth LE.
 You don't need anything from this repository to implement it. Any device
 that can advertise the Nordic UART Service and parse newline-delimited JSON
 will work: Arduino, ESP32, nRF52, a Raspberry Pi with a BLE dongle.
 
 ## Enabling the bridge
 
-The BLE bridge is used through `code-buddy` on the host Mac:
+The BLE bridge is used through `opencode-buddy` on the host Mac:
 
-1. Run `code-buddy` once to finish pairing, time sync, shell integration, and the launchd agent setup.
+1. Run `opencode-buddy` once to finish pairing, time sync, shell integration, and the launchd agent setup.
 2. Grant Bluetooth permission to the native helper on first use.
 3. Open a new shell and run `opencode` normally.
 

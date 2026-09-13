@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def runtime_root() -> Path:
-    return Path.home() / ".code-buddy"
+    return Path.home() / ".opencode-buddy"
 
 
 def state_path() -> Path:
@@ -20,7 +20,7 @@ def helper_dir() -> Path:
 
 
 def helper_app_path() -> Path:
-    return helper_dir() / "CodeBuddyBLEHelper.app"
+    return helper_dir() / "OpenCodeBuddyBLEHelper.app"
 
 
 def socket_path() -> Path:
@@ -56,4 +56,4 @@ def firmware_dir() -> Path:
 
 
 def default_firmware_path() -> Path:
-    return firmware_dir() / "code-buddy-sticks3-app.bin"
+    return firmware_dir() / "opencode-buddy-sticks3-app.bin"

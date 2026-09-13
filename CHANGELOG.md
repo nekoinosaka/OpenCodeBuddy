@@ -2,7 +2,7 @@
 
 ## 0.1.45 - 2026-08-31
 
-- Applied the macOS 13 deployment target to the Helper rebuilt by `code-buddy repair`, with an artifact-level regression test for the compiled minimum OS version.
+- Applied the macOS 13 deployment target to the Helper rebuilt by `opencode-buddy repair`, with an artifact-level regression test for the compiled minimum OS version.
 
 ## 0.1.44 - 2026-08-31
 
@@ -15,7 +15,7 @@
 ## 0.1.42 - 2026-08-26
 
 - Restored the charging clock after a normal device reboot by validating and reusing plausible retained RTC time while the Mac is temporarily offline; the 2000-01-01 reset sentinel remains untrusted.
-- Made `code-buddy doctor` report a loaded launchd service whose agent is repeatedly exiting instead of incorrectly declaring the setup ready.
+- Made `opencode-buddy doctor` report a loaded launchd service whose agent is repeatedly exiting instead of incorrectly declaring the setup ready.
 
 ## 0.1.41 - 2026-07-23
 

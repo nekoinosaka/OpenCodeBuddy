@@ -65,7 +65,7 @@ def _matches_buddy_discovery(payload: dict) -> bool:
 
 
 def _default_use_native_helper() -> bool:
-    backend = os.environ.get("CODE_BUDDY_BLE_BACKEND", "").strip().lower()
+    backend = os.environ.get("OPENCODE_BUDDY_BLE_BACKEND", "").strip().lower()
     if backend == "bleak":
         return False
     if backend == "native":
@@ -74,7 +74,7 @@ def _default_use_native_helper() -> bool:
 
 
 def _native_helper_executable_path() -> Path:
-    return _native_helper_app_path() / "Contents" / "MacOS" / "CodeBuddyBLEHelper"
+    return _native_helper_app_path() / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper"
 
 
 def _list_native_helper_processes() -> list[_HelperProcess]:
@@ -139,16 +139,16 @@ def _terminate_native_helper_processes(
 
 @functools.lru_cache(maxsize=1)
 def _native_helper_app_path() -> Path:
-    override = os.environ.get("CODE_BUDDY_BLE_HELPER_APP", "").strip()
+    override = os.environ.get("OPENCODE_BUDDY_BLE_HELPER_APP", "").strip()
     if override:
         app_path = Path(override).expanduser()
-        executable_path = app_path / "Contents" / "MacOS" / "CodeBuddyBLEHelper"
+        executable_path = app_path / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper"
         if not executable_path.exists():
             raise NativeBleHelperError(f"Configured helper app does not exist: {app_path}")
         return app_path
 
     runtime_app_path = runtime_helper_app_path()
-    runtime_executable = runtime_app_path / "Contents" / "MacOS" / "CodeBuddyBLEHelper"
+    runtime_executable = runtime_app_path / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper"
     if runtime_executable.exists():
         return runtime_app_path
 
@@ -159,7 +159,7 @@ def _native_helper_app_path() -> Path:
 
 
 def _discover_with_native_helper(timeout: float) -> list[DiscoveredBuddy]:
-    session_dir = Path(tempfile.mkdtemp(prefix="codebuddy-ble-discover-"))
+    session_dir = Path(tempfile.mkdtemp(prefix="opencodebuddy-ble-discover-"))
     commands_dir = session_dir / "commands"
     events_path = session_dir / "events.jsonl"
     commands_dir.mkdir(parents=True, exist_ok=True)
@@ -337,7 +337,7 @@ class NativeBleHelperSession:
 
         await asyncio.to_thread(_terminate_native_helper_processes, device_id=self.device_id)
 
-        self._session_dir = Path(tempfile.mkdtemp(prefix="codebuddy-ble-"))
+        self._session_dir = Path(tempfile.mkdtemp(prefix="opencodebuddy-ble-"))
         self._commands_dir = self._session_dir / "commands"
         self._events_path = self._session_dir / "events.jsonl"
         self._commands_dir.mkdir(parents=True, exist_ok=True)

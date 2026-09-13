@@ -177,7 +177,7 @@ class OpenCodeSessionRuntime:
         return SessionRecord(
             session_id=self.session_id,
             source="opencode",
-            originator="code-buddy",
+            originator="opencode-buddy",
             cwd=str(self.workdir),
             state=self.state,
             last_activity_at=self.last_activity_at,
@@ -506,7 +506,7 @@ class BuddyAgent:
         if any(runtime.pending_prompt is not None for runtime in self._opencode_runtime.values()):
             raise RuntimeError("finish the active approval before updating firmware")
         if not self._ble_connected or self._ble is None:
-            raise RuntimeError("Code Buddy is not connected over Bluetooth")
+            raise RuntimeError("OpenCode Buddy is not connected over Bluetooth")
         raw_path = payload.get("firmware")
         if not isinstance(raw_path, str) or not raw_path or len(raw_path) > 4096 or "\x00" in raw_path:
             raise ValueError("firmware application image path is invalid")

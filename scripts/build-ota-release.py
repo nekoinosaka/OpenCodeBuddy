@@ -16,7 +16,7 @@ from opencode_buddy.ota_release import (
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build a signed Code Buddy OTA release bundle")
+    parser = argparse.ArgumentParser(description="Build a signed OpenCode Buddy OTA release bundle")
     parser.add_argument("firmware", type=Path, help="application firmware.bin to sign")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--version", required=True)

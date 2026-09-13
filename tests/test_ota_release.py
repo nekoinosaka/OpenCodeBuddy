@@ -97,7 +97,7 @@ def _versioned_esp32s3_image(
     encoded = version.encode("ascii")
     app_desc[16 : 16 + len(encoded)] = encoded
     app_desc[16 + len(encoded)] = 0
-    app_desc[48:58] = b"CodeBuddy\0"
+    app_desc[48:58] = b"OpenCodeBuddy\0"
     return _esp32s3_image(bytes(app_desc) + payload, **image_kwargs)
 
 
@@ -409,7 +409,7 @@ def test_firmware_current_version_matches_host_package_version():
     package_version = __import__("opencode_buddy").__version__
     version_header = (project / "firmware/src/firmware_version.h").read_text()
 
-    assert f'#define CODE_BUDDY_FIRMWARE_VERSION "{package_version}"' in version_header
+    assert f'#define OPENCODE_BUDDY_FIRMWARE_VERSION "{package_version}"' in version_header
 
 
 def test_public_trust_injection_is_deterministic_and_contains_no_private_key(tmp_path):
@@ -576,7 +576,7 @@ def test_release_never_changes_existing_parent_permissions_or_inode(
     image.write_bytes(_versioned_esp32s3_image("1.2.3"))
     if use_private_tmp:
         parent = Path("/private/tmp")
-        output = parent / f"codebuddy-{tmp_path.name}-release"
+        output = parent / f"opencodebuddy-{tmp_path.name}-release"
     else:
         parent = tmp_path / "existing-project-parent"
         parent.mkdir(mode=0o755)

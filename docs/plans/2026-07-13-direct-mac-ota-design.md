@@ -2,7 +2,7 @@
 
 ## Decision
 
-Code Buddy will support two device-owned update policies:
+OpenCode Buddy will support two device-owned update policies:
 
 - `Ask` (default): a signed Mac update request opens the confirmation screen automatically; A installs and B rejects. The user no longer opens an OTA receive window first.
 - `Direct`: after one physical opt-in in Settings, an explicitly requested Mac update starts without A. This is not background update checking.

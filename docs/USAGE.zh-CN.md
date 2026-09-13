@@ -1,23 +1,23 @@
-# Code Buddy 中文使用文档
+# OpenCode Buddy 中文使用文档
 
 面向已经拥有一台 M5Stack StickS3、希望在 OpenCode 里用上实体宠物 / 审批设备的用户。
 
-> Code Buddy 改编自 [Claude Desktop Buddy](https://github.com/anthropics/claude-desktop-buddy)
-> 与 [CodeBuddy](https://github.com/CharlexH/CodeBuddy)，把主机侧从 Codex 换成了 OpenCode。
+> OpenCode Buddy 改编自 [Claude Desktop Buddy](https://github.com/anthropics/claude-desktop-buddy)
+> 与 [OpenCodeBuddy](https://github.com/CharlexH/OpenCodeBuddy)，把主机侧从 Codex 换成了 OpenCode。
 
 ---
 
 ## 1. 它是什么
 
-Code Buddy 由三部分组成：
+OpenCode Buddy 由三部分组成：
 
 | 组件 | 位置 | 作用 |
 | --- | --- | --- |
 | 设备固件 | StickS3（ESP32-S3） | 广播 `OpenCode-XXXX`，显示宠物、状态、审批、设置 |
-| `code-buddy` agent | Mac 后台（launchd） | 独占蓝牙连接，接收 OpenCode 事件并推送快照到设备 |
-| OpenCode 插件 | `~/.config/opencode/plugins/code-buddy.js` | 在 OpenCode 进程内转发事件、接管 `permission.ask` |
+| `opencode-buddy` agent | Mac 后台（launchd） | 独占蓝牙连接，接收 OpenCode 事件并推送快照到设备 |
+| OpenCode 插件 | `~/.config/opencode/plugins/opencode-buddy.js` | 在 OpenCode 进程内转发事件、接管 `permission.ask` |
 
-数据流：`OpenCode` →（插件，unix socket）→ `code-buddy agent` →（BLE NUS）→ `StickS3`。
+数据流：`OpenCode` →（插件，unix socket）→ `opencode-buddy agent` →（BLE NUS）→ `StickS3`。
 审批方向相反：设备按 A/B → agent → 插件 → OpenCode。
 
 ---
@@ -37,8 +37,8 @@ Code Buddy 由三部分组成：
 ### 3.1 烧录固件（USB）
 
 ```bash
-git clone https://github.com/nekoinosaka/CodeBuddy.git
-cd CodeBuddy
+git clone https://github.com/nekoinosaka/OpenCodeBuddy.git
+cd OpenCodeBuddy
 
 # 生成 OTA 信任材料（编译固件的 pre-script 需要）
 python3 -m venv .venv
@@ -64,17 +64,17 @@ cd ..
 
 ```bash
 # 仍在仓库根目录
-.venv/bin/code-buddy repair
+.venv/bin/opencode-buddy repair
 ```
 
 `repair` 会依次完成：
 
-1. 安装原生蓝牙 helper 到 `~/.code-buddy/helper/`
-2. 安装 OpenCode 插件到 `~/.config/opencode/plugins/code-buddy.js`
+1. 安装原生蓝牙 helper 到 `~/.opencode-buddy/helper/`
+2. 安装 OpenCode 插件到 `~/.config/opencode/plugins/opencode-buddy.js`
 3. 配对 `OpenCode-*` 设备并同步时间
-4. 安装并加载 launchd 服务 `com.codebuddy.agent`
+4. 安装并加载 launchd 服务 `com.opencodebuddy.agent`
 
-看到 `Code Buddy is ready.` 即成功。
+看到 `OpenCode Buddy is ready.` 即成功。
 
 ### 3.3 重启 OpenCode
 
@@ -134,22 +134,22 @@ opencode
 公开命令：
 
 ```bash
-code-buddy              # 未初始化则执行安装，已初始化则打印状态
-code-buddy doctor       # 诊断（加 --json 输出机器可读结果）
-code-buddy repair       # 修复 / 补全安装
-code-buddy uninstall    # 卸载（--yes 跳过确认）
-code-buddy firmware update [--firmware <app.bin>]   # 无线固件更新
+opencode-buddy              # 未初始化则执行安装，已初始化则打印状态
+opencode-buddy doctor       # 诊断（加 --json 输出机器可读结果）
+opencode-buddy repair       # 修复 / 补全安装
+opencode-buddy uninstall    # 卸载（--yes 跳过确认）
+opencode-buddy firmware update [--firmware <app.bin>]   # 无线固件更新
 ```
 
 进阶（隐藏）命令：
 
 ```bash
-code-buddy pair                     # 只配对并同步时间
-code-buddy status                   # 打印 agent 实时状态（JSON）
-code-buddy sessions                 # 打印当前会话列表（JSON）
-code-buddy install-opencode-plugin  # 只安装/更新 OpenCode 插件
-code-buddy service-install|service-uninstall|service-status
-code-buddy agent                    # 前台运行后台 agent（调试用）
+opencode-buddy pair                     # 只配对并同步时间
+opencode-buddy status                   # 打印 agent 实时状态（JSON）
+opencode-buddy sessions                 # 打印当前会话列表（JSON）
+opencode-buddy install-opencode-plugin  # 只安装/更新 OpenCode 插件
+opencode-buddy service-install|service-uninstall|service-status
+opencode-buddy agent                    # 前台运行后台 agent（调试用）
 ```
 
 ---
@@ -160,12 +160,12 @@ code-buddy agent                    # 前台运行后台 agent（调试用）
 | --- | --- |
 | `OPENCODE_SERVER_URL` | 指定 OpenCode server 地址（默认 `http://127.0.0.1:4096`）。插件会自动把 TUI 的 server URL 交给 agent；独立 `opencode serve` 时可用它覆盖 |
 | `OPENCODE_SERVER_PASSWORD` / `OPENCODE_SERVER_USERNAME` | 当 server 开启 Basic Auth 时使用 |
-| `CODE_BUDDY_AGENT_SOCKET` | 覆盖 agent 的 unix socket 路径（默认 `~/.code-buddy/agent.sock`） |
-| `CODE_BUDDY_BLE_BACKEND` | `native`（默认，macOS 原生 helper）或 `bleak`（跨平台回退，需装 `[ble]` extra） |
-| `CODE_BUDDY_BLE_HELPER_APP` | 覆盖 helper `.app` 路径 |
-| `CODE_BUDDY_BLE_HELPER_DEBUG_WINDOW` | 设为 `1` 打开 helper 事件日志窗口，排查蓝牙问题 |
+| `OPENCODE_BUDDY_AGENT_SOCKET` | 覆盖 agent 的 unix socket 路径（默认 `~/.opencode-buddy/agent.sock`） |
+| `OPENCODE_BUDDY_BLE_BACKEND` | `native`（默认，macOS 原生 helper）或 `bleak`（跨平台回退，需装 `[ble]` extra） |
+| `OPENCODE_BUDDY_BLE_HELPER_APP` | 覆盖 helper `.app` 路径 |
+| `OPENCODE_BUDDY_BLE_HELPER_DEBUG_WINDOW` | 设为 `1` 打开 helper 事件日志窗口，排查蓝牙问题 |
 
-数据目录：`~/.code-buddy/`
+数据目录：`~/.opencode-buddy/`
 
 ```
 state.json          # 配对信息、快照、统计
@@ -205,15 +205,15 @@ ota/                # OTA 信任材料（私钥 + 公钥）
 前提：设备已刷入支持 OTA 的完整固件，且已在设备设置里配置 Wi-Fi。
 
 ```bash
-code-buddy firmware update
+opencode-buddy firmware update
 ```
 
-- agent 会用 `~/.code-buddy/ota` 下已固定的信任材料签一份一次性清单，
+- agent 会用 `~/.opencode-buddy/ota` 下已固定的信任材料签一份一次性清单，
   通过短时本地 HTTPS 提供 app-only 镜像，并等待设备 A 键确认。
 - 提交启动分区前按 B 或 Ctrl-C 可取消。
-- 开发构建可显式指定镜像：`code-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/firmware.bin`。
+- 开发构建可显式指定镜像：`opencode-buddy firmware update --firmware firmware/.pio/build/m5stack-sticks3/firmware.bin`。
 
-> 仓库里自带的 `src/opencode_buddy/firmware/code-buddy-sticks3-app.bin` 是上游遗留的
+> 仓库里自带的 `src/opencode_buddy/firmware/opencode-buddy-sticks3-app.bin` 是上游遗留的
 > 预编译镜像。改过固件源码后，若要继续用 OTA，请重新编译并覆盖它。
 
 ---
@@ -223,16 +223,16 @@ code-buddy firmware update
 **设备扫描不到 / 没有 `/dev/cu.usbmodem`**
 - 用 `esp-builtin`（见 3.1）烧录，不依赖串口。
 - 确认设备已上电、屏幕亮；换数据线、直插 Mac 而非 hub。
-- 用 `CODE_BUDDY_BLE_HELPER_DEBUG_WINDOW=1` 打开 helper 日志窗口观察扫描事件。
+- 用 `OPENCODE_BUDDY_BLE_HELPER_DEBUG_WINDOW=1` 打开 helper 日志窗口观察扫描事件。
 
-**`code-buddy doctor` 报 agent 反复退出**
-- 看 `~/.code-buddy/logs/com.codebuddy.agent.stderr.log`。
+**`opencode-buddy doctor` 报 agent 反复退出**
+- 看 `~/.opencode-buddy/logs/com.opencodebuddy.agent.stderr.log`。
 - 常见原因：Python 环境里没有 `opencode_buddy`。执行 `.venv/bin/pip install -e '.[dev]'`
-  后 `code-buddy repair`。
+  后 `opencode-buddy repair`。
 
 **审批不弹到设备**
 - 确认已安装插件并**重启过 OpenCode**。
-- `code-buddy doctor` 检查 `OpenCode plugin` 与 `Agent: running`。
+- `opencode-buddy doctor` 检查 `OpenCode plugin` 与 `Agent: running`。
 - 设备离线时会自动回退原生界面，这是预期行为。
 
 **蓝牙权限**
@@ -241,10 +241,10 @@ code-buddy firmware update
 **卸载**
 
 ```bash
-code-buddy uninstall
+opencode-buddy uninstall
 ```
 
-会移除 launchd 服务、插件文件与 `~/.code-buddy`。
+会移除 launchd 服务、插件文件与 `~/.opencode-buddy`。
 
 ---
 
@@ -261,5 +261,5 @@ cd firmware && pio test -e native   # 固件逻辑测试（如已配置 native �
 ## 12. 来源与许可
 
 - 改编自 [Claude Desktop Buddy](https://github.com/anthropics/claude-desktop-buddy)（Anthropic）
-  与 [CodeBuddy](https://github.com/CharlexH/CodeBuddy)。
+  与 [OpenCodeBuddy](https://github.com/CharlexH/OpenCodeBuddy)。
 - 本仓库为其 OpenCode 适配 fork。

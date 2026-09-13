@@ -82,7 +82,7 @@ def _verify_ca_snapshot(ca_bytes: bytes) -> None:
     except RuntimeError as exc:
         raise RuntimeError("OTA local CA certificate is expired or not yet valid") from exc
 
-    directory = Path(tempfile.mkdtemp(prefix="code-buddy-ota-ca-"))
+    directory = Path(tempfile.mkdtemp(prefix="opencode-buddy-ota-ca-"))
     certificate = directory / "ca.pem"
     directory.chmod(0o700)
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
@@ -171,12 +171,12 @@ def _header(ca_pem: bytes, public_pem: bytes, ca_hash: str, public_hash: str) ->
         raise RuntimeError("OTA public trust PEM must be ASCII") from exc
     return (
         "#pragma once\n"
-        "#define CODE_BUDDY_OTA_TRUST_GENERATED 1\n"
-        f"static constexpr char CODE_BUDDY_OTA_CA_PEM[] = {json.dumps(ca_text)};\n"
-        "static constexpr char CODE_BUDDY_OTA_MANIFEST_PUBLIC_KEY_PEM[] = "
+        "#define OPENCODE_BUDDY_OTA_TRUST_GENERATED 1\n"
+        f"static constexpr char OPENCODE_BUDDY_OTA_CA_PEM[] = {json.dumps(ca_text)};\n"
+        "static constexpr char OPENCODE_BUDDY_OTA_MANIFEST_PUBLIC_KEY_PEM[] = "
         f"{json.dumps(public_text)};\n"
-        f"static constexpr char CODE_BUDDY_OTA_CA_SHA256[] = \"{ca_hash}\";\n"
-        "static constexpr char CODE_BUDDY_OTA_MANIFEST_PUBLIC_KEY_SHA256[] = "
+        f"static constexpr char OPENCODE_BUDDY_OTA_CA_SHA256[] = \"{ca_hash}\";\n"
+        "static constexpr char OPENCODE_BUDDY_OTA_MANIFEST_PUBLIC_KEY_SHA256[] = "
         f"\"{public_hash}\";\n"
     ).encode("ascii")
 
@@ -280,13 +280,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 def _platformio() -> None:
     project_dir = Path(env.subst("$PROJECT_DIR")).resolve()  # type: ignore[name-defined]
     output = project_dir / "generated/ota-trust/ota_trust_generated.h"
-    explicit_public = os.environ.get("CODE_BUDDY_OTA_PUBLIC_DIR")
+    explicit_public = os.environ.get("OPENCODE_BUDDY_OTA_PUBLIC_DIR")
     try:
         if explicit_public:
             public_dir = Path(explicit_public).expanduser()
-            expected_ca = os.environ.get("CODE_BUDDY_OTA_EXPECTED_CA_SHA256", "")
+            expected_ca = os.environ.get("OPENCODE_BUDDY_OTA_EXPECTED_CA_SHA256", "")
             expected_public = os.environ.get(
-                "CODE_BUDDY_OTA_EXPECTED_MANIFEST_PUBLIC_SHA256", ""
+                "OPENCODE_BUDDY_OTA_EXPECTED_MANIFEST_PUBLIC_SHA256", ""
             )
             if not expected_ca or not expected_public:
                 raise RuntimeError(
@@ -300,7 +300,7 @@ def _platformio() -> None:
             )
         else:
             managed_root = Path(
-                os.environ.get("CODE_BUDDY_OTA_TRUST_ROOT", "~/.code-buddy/ota")
+                os.environ.get("OPENCODE_BUDDY_OTA_TRUST_ROOT", "~/.opencode-buddy/ota")
             ).expanduser()
             inject_managed(
                 root=managed_root,

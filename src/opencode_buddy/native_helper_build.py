@@ -11,18 +11,18 @@ from pathlib import Path
 def build_bundled_native_helper() -> Path:
     """Build an ad-hoc signed helper exclusively from packaged resources."""
 
-    build_root = Path(tempfile.mkdtemp(prefix="codebuddy-native-helper-"))
-    marker = build_root / ".codebuddy-native-build"
+    build_root = Path(tempfile.mkdtemp(prefix="opencodebuddy-native-helper-"))
+    marker = build_root / ".opencodebuddy-native-build"
     marker.write_text("managed\n", encoding="ascii")
-    app = build_root / "CodeBuddyBLEHelper.app"
-    executable = app / "Contents" / "MacOS" / "CodeBuddyBLEHelper"
+    app = build_root / "OpenCodeBuddyBLEHelper.app"
+    executable = app / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper"
     plist_destination = app / "Contents" / "Info.plist"
     executable.parent.mkdir(parents=True)
     package = resources.files("opencode_buddy").joinpath("native_ble_helper")
     try:
         with contextlib.ExitStack() as stack:
             source = stack.enter_context(
-                resources.as_file(package.joinpath("CodeBuddyBLEHelper.swift"))
+                resources.as_file(package.joinpath("OpenCodeBuddyBLEHelper.swift"))
             )
             plist = stack.enter_context(resources.as_file(package.joinpath("Info.plist")))
             shutil.copyfile(plist, plist_destination)
@@ -60,5 +60,5 @@ def build_bundled_native_helper() -> Path:
 
 def cleanup_bundled_native_helper_build(app: Path) -> None:
     build_root = Path(app).parent
-    if (build_root / ".codebuddy-native-build").is_file():
+    if (build_root / ".opencodebuddy-native-build").is_file():
         shutil.rmtree(build_root, ignore_errors=True)

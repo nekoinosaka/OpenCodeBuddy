@@ -2,10 +2,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SRC="$ROOT/src/opencode_buddy/native_ble_helper/CodeBuddyBLEHelper.swift"
+SRC="$ROOT/src/opencode_buddy/native_ble_helper/OpenCodeBuddyBLEHelper.swift"
 PLIST="$ROOT/src/opencode_buddy/native_ble_helper/Info.plist"
-APP="$ROOT/.build/native/CodeBuddyBLEHelper.app"
-BIN="$APP/Contents/MacOS/CodeBuddyBLEHelper"
+APP="$ROOT/.build/native/OpenCodeBuddyBLEHelper.app"
+BIN="$APP/Contents/MacOS/OpenCodeBuddyBLEHelper"
 APP_PLIST="$APP/Contents/Info.plist"
 
 rm -rf "$APP"

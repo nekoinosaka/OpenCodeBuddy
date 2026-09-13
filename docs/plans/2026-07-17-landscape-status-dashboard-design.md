@@ -38,7 +38,7 @@ References:
 5. `BuddySnapshot` publishes the optional count as `"unread"` in the BLE payload.
 6. Firmware validates `unread` as an integer from 0 through 255, stores it as `unreadCount`, and renders it under the `NEW` label. Counts above 99 render as `99+`.
 
-Code Buddy never writes to OpenCode Desktop state.
+OpenCode Buddy never writes to OpenCode Desktop state.
 
 ## Landscape layout
 

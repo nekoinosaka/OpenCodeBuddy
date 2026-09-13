@@ -260,7 +260,7 @@ def verify_manifest_signature(
     signature: bytes,
     public_key: Path,
 ) -> bool:
-    descriptor, temporary_name = tempfile.mkstemp(prefix="code-buddy-ota-signature-")
+    descriptor, temporary_name = tempfile.mkstemp(prefix="opencode-buddy-ota-signature-")
     signature_path = Path(temporary_name)
     try:
         _write_all(descriptor, signature)

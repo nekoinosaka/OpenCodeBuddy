@@ -134,7 +134,7 @@ def test_ble_transport_reports_native_disconnect_state():
 
 
 def test_native_helper_open_command_launches_without_focus(tmp_path):
-    app_path = tmp_path / "CodeBuddyBLEHelper.app"
+    app_path = tmp_path / "OpenCodeBuddyBLEHelper.app"
     session_dir = tmp_path / "session"
 
     command = ble_transport._native_helper_open_command(
@@ -261,7 +261,7 @@ def test_native_discovery_matches_name_or_service_uuid():
 def test_discover_uses_native_helper_when_backend_is_native(monkeypatch):
     expected = [DiscoveredBuddy(device_id="dev-1", name="OpenCode-1234")]
 
-    monkeypatch.setenv("CODE_BUDDY_BLE_BACKEND", "native")
+    monkeypatch.setenv("OPENCODE_BUDDY_BLE_BACKEND", "native")
     monkeypatch.setattr("opencode_buddy.ble_transport._discover_with_native_helper", lambda timeout: expected)
 
     matches = asyncio.run(BleBuddyTransport.discover(timeout=2.5))
@@ -270,13 +270,13 @@ def test_discover_uses_native_helper_when_backend_is_native(monkeypatch):
 
 
 def test_native_helper_app_path_prefers_runtime_install(monkeypatch, tmp_path):
-    app_path = tmp_path / "CodeBuddyBLEHelper.app"
-    executable = app_path / "Contents" / "MacOS" / "CodeBuddyBLEHelper"
+    app_path = tmp_path / "OpenCodeBuddyBLEHelper.app"
+    executable = app_path / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper"
     executable.parent.mkdir(parents=True)
     executable.write_text("#!/bin/sh\n", encoding="utf-8")
 
     ble_transport._native_helper_app_path.cache_clear()
-    monkeypatch.delenv("CODE_BUDDY_BLE_HELPER_APP", raising=False)
+    monkeypatch.delenv("OPENCODE_BUDDY_BLE_HELPER_APP", raising=False)
     monkeypatch.setattr(ble_transport, "runtime_helper_app_path", lambda: Path(app_path))
 
     try:
@@ -291,7 +291,7 @@ def test_non_native_discover_requires_bleak(monkeypatch):
         "_require_bleak",
         lambda: (_ for _ in ()).throw(RuntimeError("bleak is required")),
     )
-    monkeypatch.setenv("CODE_BUDDY_BLE_BACKEND", "bleak")
+    monkeypatch.setenv("OPENCODE_BUDDY_BLE_BACKEND", "bleak")
 
     with pytest.raises(RuntimeError, match="bleak is required"):
         asyncio.run(BleBuddyTransport.discover(timeout=0.1))
@@ -311,11 +311,11 @@ def test_non_native_connect_requires_bleak(monkeypatch):
 
 
 def test_terminate_native_helper_processes_filters_by_session_dir(monkeypatch, tmp_path):
-    session_dir = tmp_path / "codebuddy-ble-123"
+    session_dir = tmp_path / "opencodebuddy-ble-123"
     session_dir.mkdir()
 
-    matching = _HelperProcess(pid=101, command=f"/tmp/CodeBuddyBLEHelper --session-dir {session_dir} --device-id dev-1")
-    other = _HelperProcess(pid=202, command="/tmp/CodeBuddyBLEHelper --session-dir /tmp/other --device-id dev-1")
+    matching = _HelperProcess(pid=101, command=f"/tmp/OpenCodeBuddyBLEHelper --session-dir {session_dir} --device-id dev-1")
+    other = _HelperProcess(pid=202, command="/tmp/OpenCodeBuddyBLEHelper --session-dir /tmp/other --device-id dev-1")
 
     snapshots = [
         [matching, other],
@@ -357,7 +357,7 @@ def test_native_helper_session_cleanup_terminates_current_session_dir(monkeypatc
     )
 
     session = NativeBleHelperSession(device_id="dev-1", device_name="OpenCode-1234", on_permission=None)
-    session._session_dir = tmp_path / "codebuddy-ble-123"
+    session._session_dir = tmp_path / "opencodebuddy-ble-123"
     session._session_dir.mkdir()
     session_dir = session._session_dir
 

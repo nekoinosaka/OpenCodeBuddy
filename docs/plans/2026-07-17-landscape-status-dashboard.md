@@ -197,7 +197,7 @@ Run:
 
 ```bash
 PYTHONPATH=src .venv/bin/pytest -q tests/test_opencode_client_state_watcher.py tests/test_reducer.py tests/test_agent.py
-UV_PROJECT_ENVIRONMENT=/tmp/codebuddy-py313-test uv run --python 3.13 --extra dev pytest -q
+UV_PROJECT_ENVIRONMENT=/tmp/opencodebuddy-py313-test uv run --python 3.13 --extra dev pytest -q
 ```
 
 Expected: focused tests PASS; full Python 3.13 suite PASS.
@@ -475,7 +475,7 @@ git commit -m "feat: render landscape task dashboard"
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT=/tmp/codebuddy-py313-test uv run --python 3.13 --extra dev pytest -q
+UV_PROJECT_ENVIRONMENT=/tmp/opencodebuddy-py313-test uv run --python 3.13 --extra dev pytest -q
 for test in firmware/tests/*_test.cpp; do
   bin="/tmp/$(basename "${test%.cpp}")"
   clang++ -std=c++17 -Ifirmware/src "$test" -o "$bin" && "$bin"
@@ -493,7 +493,7 @@ Read the local array length without modifying the file:
 jq '."electron-persisted-atom-state"."unread-thread-ids-by-host-v1".local | length' ~/.opencode/.opencode-global-state.json
 ```
 
-Start/repair Code Buddy using the worktree build, then confirm the persisted/published snapshot includes the same `unread` count. Verify `RUN` and `ASK` still match local catalog state.
+Start/repair OpenCode Buddy using the worktree build, then confirm the persisted/published snapshot includes the same `unread` count. Verify `RUN` and `ASK` still match local catalog state.
 
 **Step 3: Install the firmware using the currently validated device path**
 

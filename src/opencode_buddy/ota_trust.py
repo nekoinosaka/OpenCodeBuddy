@@ -216,7 +216,7 @@ def _generate_local_ca_certificate(private_key: Path, destination: Path) -> None
             "-days",
             "3650",
             "-subj",
-            "/CN=Code Buddy Local OTA CA",
+            "/CN=OpenCode Buddy Local OTA CA",
             "-addext",
             "basicConstraints=critical,CA:TRUE",
             "-addext",

@@ -1,3 +1,3 @@
 #pragma once
 
-#define CODE_BUDDY_FIRMWARE_VERSION "0.1.45"
+#define OPENCODE_BUDDY_FIRMWARE_VERSION "0.1.45"

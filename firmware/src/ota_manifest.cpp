@@ -15,7 +15,7 @@ bool otaVerifyDetachedSignature(
   size_t signatureLength,
   void*
 ) {
-#if !CODE_BUDDY_OTA_ENABLED
+#if !OPENCODE_BUDDY_OTA_ENABLED
   (void)payload;
   (void)payloadLength;
   (void)signature;
@@ -63,7 +63,7 @@ OtaManifestResult otaManifestAuthenticateAndParse(
     rawManifestLength,
     derSignature,
     derSignatureLength,
-    CODE_BUDDY_FIRMWARE_VERSION,
+    OPENCODE_BUDDY_FIRMWARE_VERSION,
     otaVerifyDetachedSignature,
     nullptr,
     descriptor

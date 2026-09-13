@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "code-buddy"
+name = "opencode-buddy"
 version = "0.1.45"
-description = "Code Buddy bridge for M5Stack StickS3 approvals"
+description = "OpenCode Buddy bridge for M5Stack StickS3 approvals"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
@@ -19,7 +19,7 @@ ble = [
 ]
 
 [project.scripts]
-code-buddy = "opencode_buddy.cli:main"
+opencode-buddy = "opencode_buddy.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

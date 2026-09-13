@@ -37,7 +37,7 @@ def default_state_path() -> Path:
     return runtime.state_path()
 
 
-class _CodeBuddyArgumentParser(argparse.ArgumentParser):
+class _OpenCodeBuddyArgumentParser(argparse.ArgumentParser):
     def format_help(self) -> str:
         text = super().format_help()
         lines = [line for line in text.splitlines() if "==SUPPRESS==" not in line]
@@ -45,18 +45,18 @@ class _CodeBuddyArgumentParser(argparse.ArgumentParser):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = _CodeBuddyArgumentParser(
-        prog="code-buddy",
-        description="Install, pair, and maintain Code Buddy for OpenCode approvals.",
+    parser = _OpenCodeBuddyArgumentParser(
+        prog="opencode-buddy",
+        description="Install, pair, and maintain OpenCode Buddy for OpenCode approvals.",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--state-path", type=Path, default=default_state_path())
     subparsers = parser.add_subparsers(dest="command", metavar="{doctor,repair,firmware,uninstall}")
     parser.set_defaults(command="default", device=None, timeout=4.0)
 
-    doctor = subparsers.add_parser("doctor", help="Diagnose the current Code Buddy setup")
+    doctor = subparsers.add_parser("doctor", help="Diagnose the current OpenCode Buddy setup")
     doctor.add_argument("--json", action="store_true", help="Print raw machine-readable diagnostics")
-    subparsers.add_parser("repair", help="Repair or finish the local Code Buddy setup")
+    subparsers.add_parser("repair", help="Repair or finish the local OpenCode Buddy setup")
     firmware = subparsers.add_parser("firmware", help="Install signed StickS3 firmware updates")
     firmware_commands = firmware.add_subparsers(dest="firmware_command", required=True)
     firmware_update = firmware_commands.add_parser(
@@ -67,7 +67,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="application firmware.bin (development override)",
     )
-    uninstall = subparsers.add_parser("uninstall", help="Remove Code Buddy from this Mac")
+    uninstall = subparsers.add_parser("uninstall", help="Remove OpenCode Buddy from this Mac")
     uninstall.add_argument("--yes", action="store_true", help="Skip the interactive confirmation")
 
     pair = subparsers.add_parser("pair", help=argparse.SUPPRESS)
@@ -93,7 +93,7 @@ async def _pair(args: argparse.Namespace) -> int:
     if args.device:
         matches = [match for match in matches if match.name == args.device]
     if not matches:
-        print("No Code Buddy device found. Power on the StickS3 and try again.", file=sys.stderr)
+        print("No OpenCode Buddy device found. Power on the StickS3 and try again.", file=sys.stderr)
         return 1
     selected = _select_device(matches)
     await _pair_selected_device(store, selected)
@@ -137,7 +137,7 @@ def _repair(args: argparse.Namespace) -> int:
 
 def _uninstall(args: argparse.Namespace) -> int:
     if not getattr(args, "yes", False):
-        answer = input("Remove Code Buddy from this Mac? [y/N]: ").strip().lower()
+        answer = input("Remove OpenCode Buddy from this Mac? [y/N]: ").strip().lower()
         if answer not in {"y", "yes"}:
             print("Cancelled.")
             return 0
@@ -147,13 +147,13 @@ def _uninstall(args: argparse.Namespace) -> int:
     runtime_root = runtime.runtime_root()
     if runtime_root.exists():
         shutil.rmtree(runtime_root)
-    print(f"Removed Code Buddy from {runtime_root}")
+    print(f"Removed OpenCode Buddy from {runtime_root}")
     return 0
 
 
 async def _setup(args: argparse.Namespace, *, repair: bool = False) -> int:
     if sys.platform != "darwin":
-        print("Code Buddy currently supports macOS only.", file=sys.stderr)
+        print("OpenCode Buddy currently supports macOS only.", file=sys.stderr)
         return 1
     if await _ota_conflict_active(args.state_path):
         print("A firmware update is active. Wait for it to finish before repairing.", file=sys.stderr)
@@ -166,7 +166,7 @@ async def _setup(args: argparse.Namespace, *, repair: bool = False) -> int:
         helper_app_path = setup_flow.ensure_helper_app_installed()
     except (NativeBleHelperError, subprocess.CalledProcessError, OSError) as exc:
         print(f"Native BLE helper is unavailable: {exc}", file=sys.stderr)
-        print("Run `code-buddy repair` after the helper bundle is available.", file=sys.stderr)
+        print("Run `opencode-buddy repair` after the helper bundle is available.", file=sys.stderr)
         return 1
 
     try:
@@ -174,7 +174,7 @@ async def _setup(args: argparse.Namespace, *, repair: bool = False) -> int:
     except (FileNotFoundError, OSError, ValueError) as exc:
         print(f"Bundled firmware is unavailable: {exc}", file=sys.stderr)
         print(
-            "Reinstall Code Buddy with its firmware package, then run `code-buddy repair`.",
+            "Reinstall OpenCode Buddy with its firmware package, then run `opencode-buddy repair`.",
             file=sys.stderr,
         )
         return 1
@@ -197,11 +197,11 @@ async def _setup(args: argparse.Namespace, *, repair: bool = False) -> int:
     store.save(next_state)
 
     if not setup_flow.is_setup_complete(store.load()):
-        print("Code Buddy setup is still incomplete. Run `code-buddy doctor` for details.", file=sys.stderr)
+        print("OpenCode Buddy setup is still incomplete. Run `opencode-buddy doctor` for details.", file=sys.stderr)
         return 1
 
     action = "Repaired" if repair else "Installed"
-    print(f"{action} Code Buddy.")
+    print(f"{action} OpenCode Buddy.")
     print(f"Device: {selected.name} ({selected.device_id})")
     print(f"OpenCode plugin: {plugin_path}")
     print("Next: restart opencode, then use it normally.")
@@ -213,7 +213,7 @@ def _default_firmware_image() -> Path:
     if installed.is_file() and not installed.is_symlink():
         return installed
     raise FileNotFoundError(
-        "installed firmware application image is missing; run `code-buddy repair`"
+        "installed firmware application image is missing; run `opencode-buddy repair`"
     )
 
 
@@ -238,18 +238,18 @@ async def _request_ota_cancel_bounded(
 
 def _print_ota_interrupt_result(response: dict[str, object] | None) -> None:
     if response is not None and response.get("cancel_applied") is True:
-        print("Firmware update cancelled on Code Buddy.", file=sys.stderr)
+        print("Firmware update cancelled on OpenCode Buddy.", file=sys.stderr)
         return
     ota = response.get("ota") if response is not None else None
     phase = ota.get("phase") if isinstance(ota, dict) else None
     if phase in {"boot-committed", "restarting", "boot-health"}:
         print(
-            "Firmware is already committed; the update continues on Code Buddy.",
+            "Firmware is already committed; the update continues on OpenCode Buddy.",
             file=sys.stderr,
         )
     else:
         print(
-            "Cancellation was not confirmed; the update may still be continuing on Code Buddy.",
+            "Cancellation was not confirmed; the update may still be continuing on OpenCode Buddy.",
             file=sys.stderr,
         )
 
@@ -272,14 +272,14 @@ async def _firmware_update(args: argparse.Namespace) -> int:
             bucket = percent // 10
             if phase != last_phase or bucket != last_bucket:
                 if phase == "await-confirm":
-                    print("Update ready. On Code Buddy, Press A to install or B to cancel.")
+                    print("Update ready. On OpenCode Buddy, Press A to install or B to cancel.")
                 elif phase in {"download", "readback"}:
                     label = "Downloading" if phase == "download" else "Verifying flash"
                     print(f"{label}: {percent}%")
                 elif phase == "restarting":
-                    print("Firmware committed. Waiting for Code Buddy to restart...")
+                    print("Firmware committed. Waiting for OpenCode Buddy to restart...")
                 elif phase == "boot-health":
-                    print("Code Buddy restarted. Verifying boot health...")
+                    print("OpenCode Buddy restarted. Verifying boot health...")
                 elif phase == "preparing":
                     print("Preparing signed local firmware update...")
                 last_phase, last_bucket = phase, bucket
@@ -323,11 +323,11 @@ def _default_status(args: argparse.Namespace) -> int:
     device_name = payload["paired_device_name"] or "Unknown"
     device_id = payload["paired_device_id"] or "-"
     agent_text = "running" if payload["agent_running"] else "installed"
-    print("Code Buddy is ready.")
+    print("OpenCode Buddy is ready.")
     print(f"Device: {device_name} ({device_id})")
     print(f"Agent: {agent_text}")
     print(f"OpenCode plugin: {payload['opencode_plugin_path']}")
-    print("Next: restart opencode and use it normally. Use `code-buddy doctor` if anything looks wrong.")
+    print("Next: restart opencode and use it normally. Use `opencode-buddy doctor` if anything looks wrong.")
     return 0
 
 
@@ -384,7 +384,7 @@ def _doctor_payload(args: argparse.Namespace) -> dict[str, object]:
     helper_error = None
     if helper_app:
         helper_path = Path(helper_app)
-        if not (helper_path / "Contents" / "MacOS" / "CodeBuddyBLEHelper").exists():
+        if not (helper_path / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper").exists():
             helper_error = f"Helper bundle is missing or incomplete at {helper_path}"
     else:
         try:
@@ -422,15 +422,15 @@ def _render_doctor(payload: dict[str, object]) -> str:
     problems = _doctor_problems(payload)
     lines = []
     if problems:
-        lines.append("Code Buddy needs attention.")
+        lines.append("OpenCode Buddy needs attention.")
         for index, problem in enumerate(problems, start=1):
             lines.append(f"{index}. Problem: {problem['problem']}")
             lines.append(f"   Reason: {problem['reason']}")
             lines.append(f"   Next: {problem['next']}")
     else:
-        lines.append("Code Buddy is ready.")
+        lines.append("OpenCode Buddy is ready.")
         lines.append(
-            "Next: restart opencode and use it normally. Use `code-buddy repair` if approvals stop showing up."
+            "Next: restart opencode and use it normally. Use `opencode-buddy repair` if approvals stop showing up."
         )
 
     lines.append(f"Device: {payload['paired_device_name'] or '-'} ({payload['paired_device_id'] or '-'})")
@@ -450,7 +450,7 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
             {
                 "problem": "No StickS3 is paired yet.",
                 "reason": "Setup never finished a successful hardware buddy pairing.",
-                "next": "Power on the device and run `code-buddy repair`.",
+                "next": "Power on the device and run `opencode-buddy repair`.",
             }
         )
     if not payload["opencode_plugin_installed"]:
@@ -458,7 +458,7 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
             {
                 "problem": "The OpenCode bridge plugin is not installed.",
                 "reason": "OpenCode will not forward session events or approvals without it.",
-                "next": "Run `code-buddy install-opencode-plugin`, then restart opencode.",
+                "next": "Run `opencode-buddy install-opencode-plugin`, then restart opencode.",
             }
         )
     elif not payload.get("opencode_plugin_current", True):
@@ -466,7 +466,7 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
             {
                 "problem": "The OpenCode bridge plugin is out of date.",
                 "reason": "The installed plugin differs from the one bundled with this build.",
-                "next": "Run `code-buddy install-opencode-plugin`, then restart opencode.",
+                "next": "Run `opencode-buddy install-opencode-plugin`, then restart opencode.",
             }
         )
     if payload["native_helper_error"]:
@@ -474,15 +474,15 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
             {
                 "problem": "The native Bluetooth helper is unavailable.",
                 "reason": str(payload["native_helper_error"]),
-                "next": "Restore the helper bundle, then run `code-buddy repair`.",
+                "next": "Restore the helper bundle, then run `opencode-buddy repair`.",
             }
         )
     if not payload["launchd"]["loaded"]:
         problems.append(
             {
                 "problem": "The background agent is not installed or not loaded.",
-                "reason": "Launchd is not currently serving `com.codebuddy.agent`.",
-                "next": "Run `code-buddy repair` to reinstall the service.",
+                "reason": "Launchd is not currently serving `com.opencodebuddy.agent`.",
+                "next": "Run `opencode-buddy repair` to reinstall the service.",
             }
         )
     elif not payload["agent_running"]:
@@ -495,7 +495,7 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
                     "Launchd is loaded, but the agent is not running "
                     f"(last exit status: {status})."
                 ),
-                "next": "Run `code-buddy repair`; if it recurs, inspect the launchd error log.",
+                "next": "Run `opencode-buddy repair`; if it recurs, inspect the launchd error log.",
             }
         )
     return problems
@@ -505,7 +505,7 @@ def _select_device(matches) -> object:
     if len(matches) == 1:
         return matches[0]
 
-    print("Multiple Code Buddy devices found:")
+    print("Multiple OpenCode Buddy devices found:")
     for index, match in enumerate(matches, start=1):
         print(f"{index}. {match.name} ({match.device_id})")
 
@@ -543,7 +543,7 @@ async def _resolve_selected_device(args: argparse.Namespace, current: PersistedS
     if getattr(args, "device", None):
         matches = [match for match in matches if match.name == args.device]
     if not matches:
-        print("No Code Buddy device found. Power on the StickS3 and run `code-buddy repair`.", file=sys.stderr)
+        print("No OpenCode Buddy device found. Power on the StickS3 and run `opencode-buddy repair`.", file=sys.stderr)
         return None
     return _select_device(matches)
 

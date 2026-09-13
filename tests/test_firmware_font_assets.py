@@ -26,7 +26,7 @@ def test_firmware_uses_jetbrains_for_dashboard_and_one_chinese_font():
     main = MAIN.read_text(encoding="utf-8")
 
     assert '#include "fonts/jetbrains_mono_ascii_8.h"' in main
-    assert "code_buddy_fonts::JetBrainsMono_Regular8pt7b" in main
+    assert "opencode_buddy_fonts::JetBrainsMono_Regular8pt7b" in main
     assert "fonts::efontCN_10" not in main
     assert "fonts::efontCN_14" not in main
     assert "fonts::efontCN_12" in main

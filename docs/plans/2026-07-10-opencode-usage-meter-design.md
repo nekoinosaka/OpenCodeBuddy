@@ -6,20 +6,20 @@ Show the current OpenCode 5-hour and 7-day remaining allowances as two clearly s
 
 ## Data source
 
-`code-buddy` will use the supported OpenCode app-server account API rather than estimating usage from token counts or calling private ChatGPT HTTP endpoints. The long-lived host agent will own one local, loopback-only `opencode app-server` monitor connection, initialize it, and then:
+`opencode-buddy` will use the supported OpenCode app-server account API rather than estimating usage from token counts or calling private ChatGPT HTTP endpoints. The long-lived host agent will own one local, loopback-only `opencode app-server` monitor connection, initialize it, and then:
 
 1. Call `account/rateLimits/read` on startup and on a bounded refresh cadence.
 2. Merge sparse `account/rateLimits/updated` notifications into the last full response.
 3. Select the `opencode` bucket from `rateLimitsByLimitId` when present, otherwise use the backward-compatible `rateLimits` value.
 4. Convert `primary.usedPercent` and `secondary.usedPercent` to remaining percentages, preserving the returned window duration and reset time for validation and freshness decisions.
 
-The monitor must use the resolved real OpenCode binary, never Code Buddy's shim. It sends only the two rounded remaining percentages to the BLE snapshot. It never reads `~/.opencode/auth.json`, decodes tokens, or exposes an HTTP endpoint.
+The monitor must use the resolved real OpenCode binary, never OpenCode Buddy's shim. It sends only the two rounded remaining percentages to the BLE snapshot. It never reads `~/.opencode/auth.json`, decodes tokens, or exposes an HTTP endpoint.
 
 The monitor keeps the last complete snapshot through a short reconnect. The device meter is omitted until the first valid complete snapshot and after the snapshot exceeds its freshness bound, so a disconnected host cannot show a known-stale allowance. A failing rate-limit fetch must not disrupt approvals, session discovery, or BLE publication.
 
 ## Host architecture
 
-Add a small account-usage monitor independent of managed OpenCode turns. This keeps the meter current for the same signed-in account even while the user uses OpenCode Desktop or an existing CLI session that Code Buddy only observes.
+Add a small account-usage monitor independent of managed OpenCode turns. This keeps the meter current for the same signed-in account even while the user uses OpenCode Desktop or an existing CLI session that OpenCode Buddy only observes.
 
 The monitor owns the extra local app-server process and websocket connection; the existing managed bridge continues to own the approval proxy. A pure `UsageLimits` model parses camelCase app-server payloads, validates finite percentages, merges sparse updates, and exposes a displayable pair only when both the approximately 5-hour primary window and approximately 7-day secondary window are available. The monitor injects that model into `BuddyAgent`, which adds compact optional `usage` fields to `BuddySnapshot` before the normal BLE send and state-persistence paths.
 

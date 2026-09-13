@@ -12,7 +12,7 @@
 
 #if !defined(CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE) || \
     !CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE
-#error "Code Buddy OTA requires CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE"
+#error "OpenCode Buddy OTA requires CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE"
 #endif
 
 // Arduino-ESP32 otherwise marks PENDING_VERIFY images valid inside

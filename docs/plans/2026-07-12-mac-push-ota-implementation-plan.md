@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
 
-**Goal:** Deliver a tested `code-buddy firmware update` flow that transfers a signed application image from the paired Mac to StickS3 over local HTTPS after one final USB bootstrap.
+**Goal:** Deliver a tested `opencode-buddy firmware update` flow that transfers a signed application image from the paired Mac to StickS3 over local HTTPS after one final USB bootstrap.
 
 **Architecture:** The long-lived agent creates and signs a one-time release, serves it over an ephemeral HTTPS endpoint, and sends a BLE offer. StickS3 provisions Wi-Fi locally, authenticates the Mac and exact manifest bytes, writes only the inactive OTA slot, verifies the stored bytes, then confirms or rolls back the first boot.
 
@@ -25,7 +25,7 @@
 **Steps:**
 1. Write failing tests for runtime paths, `0700`/`0600` permissions, idempotent key generation, exact canonical manifest bytes, P-256 signature verification, monotonic version binding, SHA-256/size binding, and refusal to place private material in a bundle.
 2. Run the focused tests and record the expected missing-module/API failures.
-3. Implement key generation through argument-safe `openssl` subprocess calls, protected paths under `~/.code-buddy/ota`, public-material export for the firmware build, canonical manifest creation, signing, and offline verification.
+3. Implement key generation through argument-safe `openssl` subprocess calls, protected paths under `~/.opencode-buddy/ota`, public-material export for the firmware build, canonical manifest creation, signing, and offline verification.
 4. Run focused tests plus `git diff --check`.
 5. Commit as `feat: add protected OTA release signing`.
 
@@ -125,7 +125,7 @@
 - Modify: `src/opencode_buddy/cli.py`
 - Modify: `src/opencode_buddy/agent.py`
 - Modify: `src/opencode_buddy/ble_transport.py`
-- Modify: `src/opencode_buddy/native_ble_helper/CodeBuddyBLEHelper.swift`
+- Modify: `src/opencode_buddy/native_ble_helper/OpenCodeBuddyBLEHelper.swift`
 - Modify: `src/opencode_buddy/setup_flow.py`
 - Modify: `scripts/build-firmware-release.sh`
 - Modify: `README.md`
@@ -135,7 +135,7 @@
 - Test: `tests/test_ble_transport.py`
 
 **Steps:**
-1. Write failing tests for `code-buddy firmware update`, offer/accept/reject/status protocol, OTA-exclusive agent state, snapshot suspension, reconnect/version confirmation, timeout cleanup, and actionable errors.
+1. Write failing tests for `opencode-buddy firmware update`, offer/accept/reject/status protocol, OTA-exclusive agent state, snapshot suspension, reconnect/version confirmation, timeout cleanup, and actionable errors.
 2. Verify red.
 3. Implement the CLI and agent orchestration. Default to the release app image, support an explicit image for development, never accept arbitrary device URLs, and wait for physical confirmation plus post-reboot BLE version proof.
 4. Run the full host and firmware suites, native helper build, release build, and `git diff --check`.
@@ -150,7 +150,7 @@
 1. Generate the real local trust directory outside Git and build bootstrap version N with its public material.
 2. USB-flash version N to `/dev/cu.usbmodem1101`; capture boot, partition, rollback capability, BLE, and Wi-Fi provisioning evidence.
 3. Provision the user's 2.4 GHz Wi-Fi without logging credentials.
-4. Build/sign version N+1 and run `code-buddy firmware update`; capture offer confirmation, HTTPS transfer, inactive-slot digest, reboot, pending-health validation, BLE reconnect, reported version, and running snapshot.
+4. Build/sign version N+1 and run `opencode-buddy firmware update`; capture offer confirmation, HTTPS transfer, inactive-slot digest, reboot, pending-health validation, BLE reconnect, reported version, and running snapshot.
 5. Run negative physical checks: tampered signature/digest and interrupted transfer must not switch slots; a controlled pending-health failure must restore N without a loop.
 6. Re-run 116+ host tests, every firmware C++ test, `pio run -s`, release verification, and worktree cleanliness. Dispatch final spec and quality reviews before reporting completion.
 

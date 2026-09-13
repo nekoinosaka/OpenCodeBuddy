@@ -59,7 +59,7 @@ def test_authorization_bytes_are_canonical_and_domain_separated():
 
     assert first == second
     assert first == (
-        b'{"action":"code-buddy-firmware-install-v1","device":"OpenCode-4DAD",'
+        b'{"action":"opencode-buddy-firmware-install-v1","device":"OpenCode-4DAD",'
         b'"expiresAt":1700000120,"generation":7,"issuedAt":1700000000,'
         b'"manifestUrl":"https://192.168.1.2:443/token-token-token-token-1234/manifest.json",'
         b'"nonce":"nnnnnnnnnnnnnnnnnnnnnnnn",'

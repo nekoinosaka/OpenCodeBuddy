@@ -72,7 +72,7 @@ The release pipeline publishes a canonical JSON manifest and detached signature 
   "minimumVersion": "0.1.4",
   "publishedAt": "2026-07-11T09:00:00Z",
   "artifact": {
-    "url": "https://updates.example.invalid/code-buddy/stable/0.2.0/firmware.bin",
+    "url": "https://updates.example.invalid/opencode-buddy/stable/0.2.0/firmware.bin",
     "sha256": "lowercase-64-hex-digest",
     "sizeBytes": 2015232
   },
@@ -88,7 +88,7 @@ The manifest fetch order is deliberately byte-oriented:
 4. Parse only after steps 1–3 succeed, serialize the typed result with the same documented canonicalization profile used by the release tool, and require byte-for-byte equality with the signed bytes. This defends against parser/canonicalizer ambiguity in addition to the explicit duplicate-key check.
 5. Validate the complete typed schema and policy: `schema`, `channel`, `version`, `chip`, `minimumVersion`, and `publishedAt`, then bind one artifact tuple consisting of `artifact.url`, lowercase 64-hex `artifact.sha256`, integer `artifact.sizeBytes`, manifest `version`, and `channel`. No field may have an alias, implicit default, lossy numeric conversion, or unconsumed duplicate/unknown replacement.
 
-The compiled update origin is one exact `https` scheme, lowercase host, and port. The manifest, signature, and artifact URL must use that same origin; redirects are disabled rather than followed. Paths must be versioned, immutable, normalized, free of user info/fragments/dot segments, and match `/code-buddy/<channel>/<version>/firmware.bin`. Reject HTTP, a foreign host or port, any redirect, oversized manifests/images, downgrades, a response length different from signed `sizeBytes`, and an image that does not fit the inactive slot. GitHub Releases remains an optional mirror only because its asset redirects do not satisfy this fixed-origin device policy.
+The compiled update origin is one exact `https` scheme, lowercase host, and port. The manifest, signature, and artifact URL must use that same origin; redirects are disabled rather than followed. Paths must be versioned, immutable, normalized, free of user info/fragments/dot segments, and match `/opencode-buddy/<channel>/<version>/firmware.bin`. Reject HTTP, a foreign host or port, any redirect, oversized manifests/images, downgrades, a response length different from signed `sizeBytes`, and an image that does not fit the inactive slot. GitHub Releases remains an optional mirror only because its asset redirects do not satisfy this fixed-origin device policy.
 
 Do not use the convenience `esp_https_ota_finish()` path for the security decision because its finish/validation ordering does not expose the exact written partition for the required pre-switch digest gate. Use `esp_ota_begin()` + bounded `esp_ota_write()` calls to the inactive application partition, tracking received bytes only for progress. After the final byte, require received length == signed `sizeBytes`, call `esp_ota_end()` to close and validate the image, then read exactly `sizeBytes` back from that partition through `esp_partition_read()` in bounded chunks and compute SHA-256 over the readback bytes. Compare that digest in constant time with the signed lowercase digest. Only after both `esp_ota_end()` and readback digest verification succeed may code call `esp_ota_set_boot_partition()`. Erase/restart staging on any error; a streaming download hash may be retained as diagnostics, but it must not replace partition readback and must never authorize a boot-slot switch.
 
@@ -293,7 +293,7 @@ Run local verification against a test signing key outside the repo. As a release
 
 ```bash
 git add scripts README.md .github/workflows
-git commit -m "build: publish signed Code Buddy OTA releases"
+git commit -m "build: publish signed OpenCode Buddy OTA releases"
 ```
 
 ## Task 7: Add future Wi-Fi features only behind the same privacy boundary

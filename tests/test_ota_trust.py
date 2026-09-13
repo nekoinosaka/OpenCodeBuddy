@@ -52,9 +52,9 @@ def test_existing_trust_loader_never_bootstraps_or_rotates(tmp_path):
 
 
 def test_runtime_exposes_protected_ota_paths(monkeypatch, tmp_path):
-    monkeypatch.setattr(runtime, "runtime_root", lambda: tmp_path / ".code-buddy")
+    monkeypatch.setattr(runtime, "runtime_root", lambda: tmp_path / ".opencode-buddy")
 
-    assert runtime.ota_dir() == tmp_path / ".code-buddy" / "ota"
+    assert runtime.ota_dir() == tmp_path / ".opencode-buddy" / "ota"
     assert runtime.ota_private_dir() == runtime.ota_dir() / "private"
     assert runtime.ota_public_dir() == runtime.ota_dir() / "public"
     assert runtime.ota_releases_dir() == runtime.ota_dir() / "releases"
@@ -302,7 +302,7 @@ def test_generation_atomically_repairs_legacy_ca_extensions_without_rotating_key
             "-days",
             "3650",
             "-subj",
-            "/CN=Code Buddy Local OTA CA",
+            "/CN=OpenCode Buddy Local OTA CA",
             "-addext",
             "basicConstraints=critical,CA:TRUE",
             "-addext",

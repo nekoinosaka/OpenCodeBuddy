@@ -13,7 +13,7 @@ from opencode_buddy.native_helper_build import (
 def test_bundled_native_helper_targets_the_supported_macos_floor():
     app = build_bundled_native_helper()
     try:
-        executable = app / "Contents" / "MacOS" / "CodeBuddyBLEHelper"
+        executable = app / "Contents" / "MacOS" / "OpenCodeBuddyBLEHelper"
         load_commands = subprocess.run(
             ["otool", "-l", str(executable)],
             check=True,

@@ -3,7 +3,7 @@ import { homedir } from "node:os"
 import { join } from "node:path"
 
 const SOCKET_PATH =
-  process.env.CODE_BUDDY_AGENT_SOCKET || join(homedir(), ".code-buddy", "agent.sock")
+  process.env.OPENCODE_BUDDY_AGENT_SOCKET || join(homedir(), ".opencode-buddy", "agent.sock")
 
 const FORWARDED_EVENTS = new Set([
   "session.created",
@@ -79,11 +79,11 @@ function decisionToReply(decision) {
   return null
 }
 
-export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
+export const OpenCodeBuddyBridge = async ({ client, serverUrl, directory }) => {
   const log = async (level, message, extra) => {
     try {
       await client?.app?.log?.({
-        body: { service: "code-buddy", level, message, extra },
+        body: { service: "opencode-buddy", level, message, extra },
       })
     } catch {}
   }
@@ -290,9 +290,9 @@ export const CodeBuddyBridge = async ({ client, serverUrl, directory }) => {
     },
     2000,
   )
-  await log("info", "Code Buddy bridge plugin initialized", { socket: SOCKET_PATH })
+  await log("info", "OpenCode Buddy bridge plugin initialized", { socket: SOCKET_PATH })
   try {
-    await log("info", "Code Buddy client surface", {
+    await log("info", "OpenCode Buddy client surface", {
       top: Object.keys(client ?? {}).sort().join(","),
       permission: Object.keys(client?.permission ?? {}).sort().join(","),
       question: Object.keys(client?.question ?? {}).sort().join(","),

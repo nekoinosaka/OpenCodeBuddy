@@ -7,7 +7,7 @@
 
 #include "ota_manifest_logic.h"
 
-constexpr char OTA_AUTHORIZATION_ACTION[] = "code-buddy-firmware-install-v1";
+constexpr char OTA_AUTHORIZATION_ACTION[] = "opencode-buddy-firmware-install-v1";
 constexpr size_t OTA_AUTHORIZATION_MAX_BYTES = 1024;
 constexpr uint32_t OTA_AUTHORIZATION_MAX_LIFETIME_SECONDS = 300;
 constexpr size_t OTA_AUTHORIZATION_REPLAY_SLOTS = 4;

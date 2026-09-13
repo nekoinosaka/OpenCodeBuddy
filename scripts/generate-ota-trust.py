@@ -12,8 +12,8 @@ from opencode_buddy.ota_trust import bootstrap_ota_trust, export_public_trust
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate protected Code Buddy OTA trust material")
-    parser.add_argument("--root", type=Path, help="override the default ~/.code-buddy/ota root")
+    parser = argparse.ArgumentParser(description="Generate protected OpenCode Buddy OTA trust material")
+    parser.add_argument("--root", type=Path, help="override the default ~/.opencode-buddy/ota root")
     parser.add_argument(
         "--rotate-pins",
         action="store_true",

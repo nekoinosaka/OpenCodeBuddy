@@ -30,7 +30,7 @@ Expected: FAIL because signed authorization helpers and version negotiation do n
 
 **Step 3: Implement the minimum host behavior**
 
-Add `canonical_ota_authorization_bytes(...)` and `build_signed_ota_offer(...)`. Canonical fields are `action`, `device`, `expiresAt`, `generation`, `issuedAt`, `manifestUrl`, `nonce`, `signatureUrl`, `sizeBytes`, and `version`; `action` is `code-buddy-firmware-install-v1`. DER signatures are lowercase hex. Device names must match `OpenCode-[0-9A-F]{4}` and expiry must be short and forward-moving.
+Add `canonical_ota_authorization_bytes(...)` and `build_signed_ota_offer(...)`. Canonical fields are `action`, `device`, `expiresAt`, `generation`, `issuedAt`, `manifestUrl`, `nonce`, `signatureUrl`, `sizeBytes`, and `version`; `action` is `opencode-buddy-firmware-install-v1`. DER signatures are lowercase hex. Device names must match `OpenCode-[0-9A-F]{4}` and expiry must be short and forward-moving.
 
 In the coordinator, read the BLE transport device name, use the injected clock, and send the signed offer only when the probed current firmware is at least `0.1.6`; otherwise send the unchanged legacy offer.
 
@@ -150,7 +150,7 @@ Use real-directory checks before chmod, enforce root `0700`, chmod the Unix sock
 
 **Step 4: Verify GREEN and live permissions**
 
-Run the focused tests and require zero failures. After reinstall/restart, verify `stat` reports `700` for `~/.code-buddy` and `600` for `agent.sock`.
+Run the focused tests and require zero failures. After reinstall/restart, verify `stat` reports `700` for `~/.opencode-buddy` and `600` for `agent.sock`.
 
 **Step 5: Commit**
 
@@ -165,7 +165,7 @@ git commit -m "fix: restrict OTA control plane to local user"
 - Modify: `pyproject.toml`
 - Modify: `src/opencode_buddy/__init__.py`
 - Modify: `firmware/src/firmware_version.h`
-- Modify: `src/opencode_buddy/firmware/code-buddy-sticks3-app.bin`
+- Modify: `src/opencode_buddy/firmware/opencode-buddy-sticks3-app.bin`
 
 **Step 1: Run complete verification before release**
 
@@ -181,7 +181,7 @@ On device Settings, switch `auto ota` to `on`. No secret is entered or moved.
 
 **Step 4: Prove no-touch Direct OTA with `0.1.7`**
 
-Bump/build/install `0.1.7`, run `code-buddy firmware update` while the device is on an ordinary screen, and do not navigate or press A. Require signed-offer acceptance, download/readback, reboot, BLE reconnect, and exact `version=0.1.7`, `health=valid`.
+Bump/build/install `0.1.7`, run `opencode-buddy firmware update` while the device is on an ordinary screen, and do not navigate or press A. Require signed-offer acceptance, download/readback, reboot, BLE reconnect, and exact `version=0.1.7`, `health=valid`.
 
 **Step 5: Final review and commit**
 

@@ -6,7 +6,7 @@
 
 **Architecture:** Extend the pure OTA UI policy with compact-overlay selection and deterministic portrait/landscape geometry. Track automatic overlay state separately in `main.cpp`, keep shared-face orientation eligible, and render the compact overlay after the underlying portrait sprite or landscape LCD surface.
 
-**Tech Stack:** C++17 pure firmware tests, Arduino/M5Unified canvas APIs, PlatformIO ESP32-S3 build, Code Buddy signed OTA.
+**Tech Stack:** C++17 pure firmware tests, Arduino/M5Unified canvas APIs, PlatformIO ESP32-S3 build, OpenCode Buddy signed OTA.
 
 ---
 
@@ -44,9 +44,9 @@
 ### Task 4: Package and deploy
 
 **Files:**
-- Modify: `src/opencode_buddy/firmware/code-buddy-sticks3-app.bin`
+- Modify: `src/opencode_buddy/firmware/opencode-buddy-sticks3-app.bin`
 
 1. Run `scripts/build-firmware-release.sh` and verify embedded version 0.1.8.
 2. Commit the implementation and packaged application image.
-3. Reinstall Code Buddy 0.1.8 locally if the packaged image changed.
+3. Reinstall OpenCode Buddy 0.1.8 locally if the packaged image changed.
 4. OTA the device and verify `running`, version `0.1.8`, health `valid`.
