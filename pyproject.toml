@@ -8,13 +8,14 @@ version = "0.1.45"
 description = "Code Buddy bridge for M5Stack StickS3 approvals"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = [
-  "bleak>=0.22,<1",
-]
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
   "pytest>=8,<9",
+]
+ble = [
+  "bleak>=0.22,<1",
 ]
 
 [project.scripts]

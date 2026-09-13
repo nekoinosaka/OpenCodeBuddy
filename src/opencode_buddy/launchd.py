@@ -35,6 +35,7 @@ def render_launchd_plist(
             "agent",
         ],
         "WorkingDirectory": str(repo_root),
+        "EnvironmentVariables": {"PYTHONPATH": str(Path(repo_root) / "src")},
         "RunAtLoad": True,
         "KeepAlive": True,
         "StandardOutPath": str(log_dir / f"{label}.stdout.log"),
