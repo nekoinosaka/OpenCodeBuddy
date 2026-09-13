@@ -213,7 +213,7 @@ class BuddyAgent:
         ota_confirm_timeout: float = 180.0,
         ota_install_timeout: float = 600.0,
         opencode_permission_timeout: float = 60.0,
-        opencode_connect_wait: float = 3.0,
+        opencode_connect_wait: float = 8.0,
     ) -> None:
         self.state_path = state_path
         self.socket_path = socket_path or default_socket_path(state_path)
@@ -723,6 +723,11 @@ class BuddyAgent:
             while (not self._ble_connected or self._ble is None) and time.monotonic() < deadline:
                 await asyncio.sleep(0.1)
         if not self._ble_connected or self._ble is None:
+            _LOG.info(
+                "no BLE link after %.1fs; falling back to the terminal for permission %s",
+                self._opencode_connect_wait,
+                request_id,
+            )
             return {"ok": True, "decision": "ask"}
         if self.catalog.session_for_request(request_id) is None:
             for event in self._opencode_adapter.handle(
@@ -808,6 +813,11 @@ class BuddyAgent:
             ) and time.monotonic() < deadline:
                 await asyncio.sleep(0.1)
         if not self._ble_connected or self._ble is None:
+            _LOG.info(
+                "no BLE link after %.1fs; falling back to the terminal for question %s",
+                self._opencode_connect_wait,
+                request_id,
+            )
             return {"ok": True, "decision": "ask"}
         index = int(payload.get("index", 0) or 0)
         total = int(payload.get("total", 1) or 1)

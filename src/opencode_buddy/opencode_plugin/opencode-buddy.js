@@ -131,11 +131,29 @@ export const OpenCodeBuddyBridge = async ({ client, serverUrl, directory }) => {
         () => client.permission.reply({ requestID: permission.id, reply, directory: dir }),
       ])
     }
+    if (typeof client?._client?.post === "function") {
+      attempts.push([
+        "low.post session permissions",
+        () =>
+          client._client.post({
+            url: "/session/{id}/permissions/{permissionID}",
+            path: { id: permission.sessionID, permissionID: permission.id },
+            body: { response: reply },
+            ...(dir ? { query: { directory: dir } } : {}),
+          }),
+      ])
+    }
     for (const [name, attempt] of attempts) {
       try {
         const result = await attempt()
         if (result && typeof result === "object" && result.error) {
-          await log("warn", "permission reply rejected", { method: name, error: String(result.error) })
+          let detail
+          try {
+            detail = JSON.stringify(result.error).slice(0, 300)
+          } catch {
+            detail = String(result.error)
+          }
+          await log("warn", "permission reply rejected", { method: name, error: detail })
           continue
         }
         return name
