@@ -451,11 +451,17 @@ class BuddyAgent:
             response = await self._handle_command(payload)
         except Exception as exc:
             response = {"ok": False, "error": str(exc)}
-        writer.write((json.dumps(response, separators=(",", ":")) + "\n").encode("utf-8"))
-        await writer.drain()
-        writer.close()
-        with contextlib.suppress(Exception):
-            await writer.wait_closed()
+        try:
+            writer.write(
+                (json.dumps(response, separators=(",", ":")) + "\n").encode("utf-8")
+            )
+            await writer.drain()
+        except (ConnectionResetError, BrokenPipeError):
+            pass
+        finally:
+            writer.close()
+            with contextlib.suppress(Exception):
+                await writer.wait_closed()
 
     async def _handle_command(self, payload: dict[str, object]) -> dict[str, object]:
         command = str(payload.get("cmd", ""))
