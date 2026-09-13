@@ -1941,10 +1941,16 @@ static void drawApproval() {
   } else {
     spr.setTextColor(GREEN, p.bg);
     spr.setCursor(4, FOOTER_Y);
-    spr.print("A: approve");
-    spr.setTextColor(HOT, p.bg);
-    spr.setCursor(W - 48, FOOTER_Y);
-    spr.print("B: deny");
+    spr.print("A:once");
+    if (((millis() / 2000) & 1) == 0) {
+      spr.setTextColor(p.textDim, p.bg);
+      spr.setCursor(W - 76, FOOTER_Y);
+      spr.print("holdA:always");
+    } else {
+      spr.setTextColor(HOT, p.bg);
+      spr.setCursor(W - 48, FOOTER_Y);
+      spr.print("B: deny");
+    }
   }
 }
 
@@ -2188,10 +2194,13 @@ static void drawLandscapeApproval(const Palette& p, uint8_t hintOffset) {
   } else {
     M5.Lcd.setTextColor(GREEN, p.bg);
     M5.Lcd.setCursor(4, FOOTER_Y);
-    M5.Lcd.print("A: approve");
+    M5.Lcd.print("A:once");
     M5.Lcd.setTextColor(HOT, p.bg);
-    M5.Lcd.setCursor(LW - 52, FOOTER_Y);
+    M5.Lcd.setCursor(110, FOOTER_Y);
     M5.Lcd.print("B: deny");
+    M5.Lcd.setTextColor(p.textDim, p.bg);
+    M5.Lcd.setCursor(LW - 76, FOOTER_Y);
+    M5.Lcd.print("holdA:always");
   }
 }
 
