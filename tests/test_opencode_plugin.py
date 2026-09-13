@@ -12,6 +12,7 @@ def test_install_opencode_plugin_writes_the_bridge(tmp_path):
     assert "permission.ask" in text
     assert "permission_ask" in text
     assert "serverUrl" in text
+    assert "permission.asked" in text
     assert '"always"' in text
 
 

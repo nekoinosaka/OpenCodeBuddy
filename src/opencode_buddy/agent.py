@@ -759,12 +759,26 @@ class BuddyAgent:
 
     async def _handle_device_permission(self, request_id: str, decision: str) -> None:
         waiter = self._opencode_permission_waiters.get(str(request_id))
-        if waiter is None or waiter.done():
+        if waiter is not None and not waiter.done():
+            if decision in {"once", "deny", "always"}:
+                waiter.set_result(decision)
+            else:
+                waiter.set_result("once")
             return
-        if decision in {"once", "deny", "always"}:
-            waiter.set_result(decision)
-        else:
-            waiter.set_result("once")
+        session_id = self._request_to_control.get(str(request_id))
+        if session_id is None:
+            return
+        response = "reject" if decision == "deny" else decision if decision == "always" else "once"
+        try:
+            await asyncio.to_thread(
+                self._server_client.respond_permission,
+                session_id,
+                str(request_id),
+                response,
+            )
+        except Exception:
+            _LOG.warning("failed to deliver permission decision to OpenCode", exc_info=True)
+        await self._resolve_opencode_permission(str(request_id))
 
     async def _publish_state(self, *, force: bool = False) -> None:
         snapshot = self._snapshot()

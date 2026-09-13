@@ -14,6 +14,7 @@ const FORWARDED_EVENTS = new Set([
   "message.updated",
   "message.part.updated",
   "permission.updated",
+  "permission.asked",
   "permission.replied",
 ])
 

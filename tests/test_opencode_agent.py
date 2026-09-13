@@ -215,3 +215,46 @@ def test_device_always_decision_passes_through(tmp_path):
         return await task
 
     assert asyncio.run(exercise()) == {"ok": True, "decision": "always"}
+
+
+class _FakeServerClient:
+    def __init__(self) -> None:
+        self.calls = []
+
+    def respond_permission(self, session_id, permission_id, response, *, remember=None):
+        self.calls.append((session_id, permission_id, response))
+        return True
+
+
+def test_event_driven_device_decision_replies_via_server(tmp_path):
+    async def exercise():
+        server = _FakeServerClient()
+        agent = BuddyAgent(
+            tmp_path / "state.json", clock=lambda: 100.0, server_client=server
+        )
+        agent._ble = _CapturingBle()
+        agent._ble_connected = True
+        await agent._handle_command(
+            {
+                "cmd": "notify",
+                "event": {
+                    "type": "permission.asked",
+                    "properties": {
+                        "id": "per-9",
+                        "sessionID": "ses-9",
+                        "type": "bash",
+                        "title": "rm -rf x",
+                        "pattern": "rm *",
+                    },
+                },
+            }
+        )
+        waiting = agent._snapshot().waiting
+        await agent._handle_device_permission("per-9", "deny")
+        return server, waiting, agent._snapshot()
+
+    server, waiting, resolved = asyncio.run(exercise())
+
+    assert waiting == 1
+    assert server.calls == [("ses-9", "per-9", "reject")]
+    assert resolved.waiting == 0

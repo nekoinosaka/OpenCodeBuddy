@@ -173,3 +173,32 @@ def test_unknown_event_is_ignored():
     adapter = OpenCodeEventAdapter()
     assert adapter.handle({"type": "file.edited", "properties": {}}) == []
     assert adapter.handle("not-an-event") == []
+
+
+def test_permission_asked_maps_to_approval_request():
+    adapter = OpenCodeEventAdapter()
+    events = adapter.handle(
+        {
+            "type": "permission.asked",
+            "properties": {
+                "id": "per-2",
+                "sessionID": "ses-2",
+                "type": "edit",
+                "title": "src/main.ts",
+                "pattern": "**/*.ts",
+                "callID": "call-2",
+            },
+        }
+    )
+    assert events == [
+        ApprovalRequest(
+            thread_id="ses-2",
+            turn_id="call-2",
+            request_id="per-2",
+            command="src/main.ts",
+            cwd="",
+            reason="src/main.ts",
+            tool="edit",
+            hint="src/main.ts",
+        )
+    ]

@@ -62,7 +62,7 @@ class OpenCodeEventAdapter:
             return self._message_updated(properties)
         if kind == "message.part.updated":
             return self._part_updated(properties)
-        if kind == "permission.updated":
+        if kind in {"permission.updated", "permission.asked"}:
             return self._permission_updated(properties)
         if kind == "permission.replied":
             return self._permission_replied(properties)
