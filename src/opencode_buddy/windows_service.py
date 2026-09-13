@@ -123,11 +123,24 @@ def uninstall_windows_service(schtasks_bin: str = "schtasks") -> None:
 
 
 def windows_service_status(schtasks_bin: str = "schtasks") -> dict:
-    completed = subprocess.run(
-        [schtasks_bin, "/Query", "/TN", TASK_NAME, "/FO", "LIST", "/V"],
-        capture_output=True,
-        text=True,
-    )
+    try:
+        completed = subprocess.run(
+            [schtasks_bin, "/Query", "/TN", TASK_NAME, "/FO", "LIST", "/V"],
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        # `doctor` must stay usable even when schtasks is unavailable or
+        # blocked by policy; report the service as unloaded rather than crash.
+        return {
+            "label": TASK_NAME,
+            "loaded": False,
+            "running": False,
+            "pid": None,
+            "last_exit_status": None,
+            "returncode": None,
+            "raw": f"schtasks unavailable: {exc}",
+        }
     raw_output = (completed.stdout or completed.stderr).strip()
     loaded = completed.returncode == 0
     status_text = _value_for(raw_output, "Status") if loaded else None

@@ -28,6 +28,17 @@ def supports_dir_fd() -> bool:
     )
 
 
+def posix_mode_bits_are_meaningful() -> bool:
+    """True only where ``st_mode`` carries real POSIX permission bits.
+
+    Windows derives ``st_mode`` from the read-only attribute, so every writable
+    file reports ``0o666`` and ``chmod`` cannot express ``0600`` / ``0700``.
+    Permission hardening must therefore stay POSIX-only.
+    """
+
+    return os.name == "posix"
+
+
 def fchmod(descriptor: int, mode: int) -> None:
     """Set permissions on an open descriptor, where the platform supports it."""
 

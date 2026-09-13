@@ -1,9 +1,19 @@
+import { readFileSync } from "node:fs"
 import { connect } from "node:net"
 import { homedir } from "node:os"
 import { join } from "node:path"
 
 const SOCKET_PATH =
   process.env.OPENCODE_BUDDY_AGENT_SOCKET || join(homedir(), ".opencode-buddy", "agent.sock")
+
+// On Windows the background agent cannot serve AF_UNIX, so it binds a loopback
+// TCP listener and records {host, port} in the endpoint file. Re-read it on
+// every request because the port changes whenever the agent restarts.
+function connectOptions() {
+  if (process.platform !== "win32") return { path: SOCKET_PATH }
+  const payload = JSON.parse(readFileSync(SOCKET_PATH, "utf8"))
+  return { host: String(payload.host), port: Number(payload.port) }
+}
 
 const FORWARDED_EVENTS = new Set([
   "session.created",
@@ -23,7 +33,13 @@ function request(payload, timeoutMs) {
   return new Promise((resolve) => {
     let settled = false
     let buffer = ""
-    const socket = connect(SOCKET_PATH)
+    let socket
+    try {
+      socket = connect(connectOptions())
+    } catch {
+      resolve(null)
+      return
+    }
     const finish = (value) => {
       if (settled) return
       settled = true

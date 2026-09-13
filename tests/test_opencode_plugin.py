@@ -37,3 +37,12 @@ def test_opencode_plugin_is_current_tracks_the_bundled_copy(tmp_path):
 
     destination.write_text("// stale\n", encoding="utf-8")
     assert setup_flow.opencode_plugin_is_current(destination) is False
+
+
+def test_plugin_resolves_the_windows_loopback_endpoint():
+    # Windows has no usable AF_UNIX client path here: the agent records
+    # {host, port} in the endpoint file and the plugin must read it per request.
+    text = setup_flow.bundled_opencode_plugin_text()
+    assert "connectOptions" in text
+    assert "process.platform" in text
+    assert "readFileSync" in text

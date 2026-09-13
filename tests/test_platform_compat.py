@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
+
 from opencode_buddy import platform_compat
 
 
@@ -41,3 +43,21 @@ def test_fchmod_is_tolerant_when_unsupported(monkeypatch, tmp_path: Path):
         platform_compat.fchmod(descriptor, 0o600)  # must not raise
     finally:
         os.close(descriptor)
+
+
+def test_posix_mode_bits_are_only_meaningful_on_posix():
+    assert platform_compat.posix_mode_bits_are_meaningful() == (os.name == "posix")
+
+
+def test_firmware_permission_gate_is_skipped_when_mode_bits_are_not_meaningful(
+    monkeypatch, tmp_path: Path
+):
+    from opencode_buddy import ota_release
+
+    image = tmp_path / "firmware.bin"
+    image.write_bytes(b"\x00" * 64)
+
+    monkeypatch.setattr(ota_release, "posix_mode_bits_are_meaningful", lambda: False)
+    with pytest.raises(ValueError) as excinfo:
+        ota_release.inspect_esp32s3_application_image(image)
+    assert "permissions" not in str(excinfo.value)

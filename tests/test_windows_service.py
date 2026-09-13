@@ -87,3 +87,15 @@ def test_status_reports_missing_task(monkeypatch):
     status = windows_service.windows_service_status(schtasks_bin="schtasks")
     assert status["loaded"] is False
     assert status["running"] is False
+
+
+def test_status_degrades_when_schtasks_is_unavailable(monkeypatch):
+    def fake_run(*args, **kwargs):
+        raise PermissionError("access denied")
+
+    monkeypatch.setattr(windows_service.subprocess, "run", fake_run)
+
+    status = windows_service.windows_service_status(schtasks_bin="schtasks")
+    assert status["loaded"] is False
+    assert status["running"] is False
+    assert "schtasks unavailable" in status["raw"]

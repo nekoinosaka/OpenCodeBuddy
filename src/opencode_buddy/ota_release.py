@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Dict, Iterator, Optional, Sequence, Tuple
 from urllib.parse import unquote, urlsplit
 
-from .platform_compat import fchmod, lock_file, unlock_file
+from .platform_compat import fchmod, lock_file, posix_mode_bits_are_meaningful, unlock_file
 
 
 _SEMANTIC_VERSION = re.compile(
@@ -505,9 +505,10 @@ def inspect_esp32s3_application_image(image_path: Path) -> OtaImageInfo:
         raise ValueError(
             f"firmware image must be a regular non-symlink file: {image_path}"
         )
-    mode = stat.S_IMODE(image_path.lstat().st_mode)
-    if mode & 0o022:
-        raise ValueError("firmware image permissions must not be group/world writable")
+    if posix_mode_bits_are_meaningful():
+        mode = stat.S_IMODE(image_path.lstat().st_mode)
+        if mode & 0o022:
+            raise ValueError("firmware image permissions must not be group/world writable")
     contents = image_path.read_bytes()
     return _inspect_esp32s3_application_contents(contents, image_path=image_path)
 
@@ -551,7 +552,7 @@ def snapshot_ota_image(source: Path, snapshot_root: Path) -> Path:
             raise ValueError(
                 f"firmware image must be a regular non-symlink file: {source}"
             )
-        if stat.S_IMODE(metadata.st_mode) & 0o022:
+        if posix_mode_bits_are_meaningful() and stat.S_IMODE(metadata.st_mode) & 0o022:
             raise ValueError("firmware image permissions must not be group/world writable")
         if metadata.st_size <= 0 or metadata.st_size > _OTA_SLOT_CAPACITY_BYTES:
             raise ValueError("firmware image size exceeds the firmware OTA slot")
