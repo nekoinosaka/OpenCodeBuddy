@@ -246,6 +246,7 @@ class NativeBleHelperSession:
         device_name: str,
         on_permission: Optional[Callable[[str, str], Awaitable[None]]],
         on_question: Optional[Callable[..., Awaitable[None]]] = None,
+        on_disconnect: Optional[Callable[[], Awaitable[None]]] = None,
         connect_timeout: float = 15.0,
         command_timeout: float = 10.0,
     ) -> None:
@@ -253,6 +254,7 @@ class NativeBleHelperSession:
         self.device_name = device_name
         self.on_permission = on_permission
         self.on_question = on_question
+        self.on_disconnect = on_disconnect
         self.connect_timeout = connect_timeout
         self.command_timeout = command_timeout
 
@@ -480,6 +482,8 @@ class NativeBleHelperSession:
             self._connect_error = error
             self._fail_pending(error)
             self._stop_requested = True
+            if self.on_disconnect is not None:
+                asyncio.create_task(self.on_disconnect())
 
     def _fail_pending(self, error: Exception) -> None:
         for future in list(self._pending.values()):
@@ -511,6 +515,7 @@ class BleBuddyTransport:
         device_name: Optional[str] = None,
         on_permission: Optional[Callable[[str, str], Awaitable[None]]] = None,
         on_question: Optional[Callable[..., Awaitable[None]]] = None,
+        on_disconnect: Optional[Callable[[], Awaitable[None]]] = None,
         use_native_helper: Optional[bool] = None,
         native_session_factory: Optional[
             Callable[..., NativeBleHelperSession]
@@ -520,6 +525,7 @@ class BleBuddyTransport:
         self.device_name = device_name or device_id
         self.on_permission = on_permission
         self.on_question = on_question
+        self.on_disconnect = on_disconnect
         self._client: Optional[BleakClient] = None
         self._buffer = bytearray()
         self._lock: Optional[asyncio.Lock] = None
@@ -571,6 +577,7 @@ class BleBuddyTransport:
                     device_name=self.device_name,
                     on_permission=self.on_permission,
                     on_question=self.on_question,
+                    on_disconnect=self.on_disconnect,
                 )
             if self._native_session.is_connected:
                 return

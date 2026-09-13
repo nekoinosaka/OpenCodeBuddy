@@ -245,6 +245,7 @@ class BuddyAgent:
         self._stop_requested = False
         self._ble: Optional[BleBuddyTransport] = None
         self._ble_connected = False
+        self._ble_wake = asyncio.Event()
         self._last_payload: Optional[dict[str, object]] = None
         self._completion_seq = self.store.load().completion_seq
         self._completed_turn_order: Deque[tuple[str, str]] = deque()
@@ -621,7 +622,7 @@ class BuddyAgent:
             paired_device_name = current.paired_device_name
             if not paired_device_id:
                 self._ble_connected = False
-                await asyncio.sleep(self.reconnect_interval)
+                await self._wait_for_ble_change()
                 continue
             if self._ble is None or self._ble.device_id != paired_device_id:
                 if self._ble is not None:
@@ -632,6 +633,7 @@ class BuddyAgent:
                     device_name=paired_device_name,
                     on_permission=self._handle_device_permission,
                     on_question=self._handle_device_question,
+                    on_disconnect=self._handle_ble_disconnect,
                 )
                 self._ble_connected = False
             if self._ble_connected and not getattr(self._ble, "is_connected", True):
@@ -647,7 +649,20 @@ class BuddyAgent:
                         with contextlib.suppress(Exception):
                             await self._ble.disconnect()
                     self._ble = None
-            await asyncio.sleep(self.reconnect_interval)
+            await self._wait_for_ble_change()
+
+    async def _handle_ble_disconnect(self) -> None:
+        # Wired from the transport: a drop should trigger an immediate
+        # reconnect attempt instead of waiting out the poll interval.
+        self._ble_connected = False
+        self._ble_wake.set()
+
+    async def _wait_for_ble_change(self) -> None:
+        try:
+            await asyncio.wait_for(self._ble_wake.wait(), timeout=self.reconnect_interval)
+        except asyncio.TimeoutError:
+            pass
+        self._ble_wake.clear()
 
     async def _keepalive_loop(self) -> None:
         while not self._stop_requested:

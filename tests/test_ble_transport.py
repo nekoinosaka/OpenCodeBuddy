@@ -31,6 +31,7 @@ class _FakeNativeSession:
         self.writes: list[dict] = []
         self.on_permission = None
         self.on_question = None
+        self.on_disconnect = None
         self.notifications = None
 
     @property
@@ -84,11 +85,12 @@ def test_ble_transport_uses_write_with_response_for_snapshot_payloads():
 def test_ble_transport_native_helper_connect_sends_owner_and_time_sync():
     fake = _FakeNativeSession()
 
-    def factory(*, device_id: str, device_name: str, on_permission, on_question=None):
+    def factory(*, device_id: str, device_name: str, on_permission, on_question=None, on_disconnect=None):
         assert device_id == "device-1"
         assert device_name == "OpenCode-1234"
         fake.on_permission = on_permission
         fake.on_question = on_question
+        fake.on_disconnect = on_disconnect
         return fake
 
     previous_user = os.environ.get("USER")
@@ -164,11 +166,12 @@ def test_ble_transport_native_helper_forwards_permission_events():
     async def on_permission(request_id: str, decision: str) -> None:
         approvals.append((request_id, decision))
 
-    def factory(*, device_id: str, device_name: str, on_permission, on_question=None):
+    def factory(*, device_id: str, device_name: str, on_permission, on_question=None, on_disconnect=None):
         assert device_id == "device-1"
         assert device_name == "OpenCode-1234"
         fake.on_permission = on_permission
         fake.on_question = on_question
+        fake.on_disconnect = on_disconnect
         return fake
 
     transport = BleBuddyTransport(
@@ -218,9 +221,10 @@ def test_ble_transport_sends_and_receives_application_json_without_regressing_pe
     async def on_permission(request_id: str, decision: str) -> None:
         approvals.append((request_id, decision))
 
-    def factory(*, device_id: str, device_name: str, on_permission, on_question=None):
+    def factory(*, device_id: str, device_name: str, on_permission, on_question=None, on_disconnect=None):
         fake.on_permission = on_permission
         fake.on_question = on_question
+        fake.on_disconnect = on_disconnect
         return fake
 
     async def exercise():
@@ -452,3 +456,29 @@ def test_transport_connect_and_disconnect_are_singleflight_for_agent_and_ota():
     assert fake.connects == 1
     assert fake.disconnects == 1
     assert len(fake.writes) == 2
+
+
+def test_native_session_reports_disconnect():
+    from opencode_buddy.ble_transport import NativeBleHelperSession
+
+    calls = []
+
+    async def on_disconnect():
+        calls.append(1)
+
+    session = NativeBleHelperSession(
+        device_id="dev-1",
+        device_name="OpenCode-1234",
+        on_permission=None,
+        on_disconnect=on_disconnect,
+    )
+    session._connected = True
+
+    async def exercise():
+        await session._handle_event({"event": "disconnected", "error": "gone"})
+        await asyncio.sleep(0.05)
+
+    asyncio.run(exercise())
+
+    assert calls == [1]
+    assert session.is_connected is False

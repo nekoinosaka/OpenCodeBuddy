@@ -364,3 +364,17 @@ def test_question_ask_without_ble_falls_back(tmp_path):
         )
 
     assert asyncio.run(exercise()) == {"ok": True, "decision": "ask"}
+
+
+def test_ble_disconnect_sets_flag_and_wakes_loop(tmp_path):
+    async def exercise():
+        agent = BuddyAgent(tmp_path / "state.json", clock=lambda: 1.0)
+        agent._ble_connected = True
+        agent._ble_wake.clear()
+        await agent._handle_ble_disconnect()
+        return agent._ble_connected, agent._ble_wake.is_set()
+
+    connected, woke = asyncio.run(exercise())
+
+    assert connected is False
+    assert woke is True
