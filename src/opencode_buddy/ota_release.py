@@ -19,7 +19,13 @@ from pathlib import Path
 from typing import Dict, Iterator, Optional, Sequence, Tuple
 from urllib.parse import unquote, urlsplit
 
-from .platform_compat import fchmod, lock_file, posix_mode_bits_are_meaningful, unlock_file
+from .platform_compat import (
+    fchmod,
+    fsync_directory,
+    lock_file,
+    posix_mode_bits_are_meaningful,
+    unlock_file,
+)
 
 
 _SEMANTIC_VERSION = re.compile(
@@ -297,11 +303,7 @@ def _is_within(path: Path, parent: Path) -> bool:
 
 
 def _fsync_directory(directory: Path) -> None:
-    descriptor = os.open(directory, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
+    fsync_directory(directory)
 
 
 def _write_all(descriptor: int, contents: bytes) -> None:

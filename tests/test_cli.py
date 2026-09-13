@@ -308,8 +308,17 @@ def test_doctor_reports_loaded_agent_that_is_not_running():
     assert problems == [
         {
             "problem": "The background agent is repeatedly exiting.",
-            "reason": "Launchd is loaded, but the agent is not running (last exit status: 1).",
-            "next": "Run `opencode-buddy repair`; if it recurs, inspect the launchd error log.",
+            "reason": (
+                "The background service is loaded, but the agent is not running "
+                "(last exit status: 1)."
+                if sys.platform.startswith("win")
+                else "Launchd is loaded, but the agent is not running (last exit status: 1)."
+            ),
+            "next": (
+                "Run `opencode-buddy repair`; if it recurs, inspect the Task Scheduler history."
+                if sys.platform.startswith("win")
+                else "Run `opencode-buddy repair`; if it recurs, inspect the launchd error log."
+            ),
         }
     ]
 

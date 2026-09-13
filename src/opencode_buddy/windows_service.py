@@ -14,6 +14,19 @@ def windows_task_name() -> str:
     return TASK_NAME
 
 
+def _run_schtasks(args: list[str], *, schtasks_bin: str, check: bool = False):
+    # Windows console tools emit OEM/ANSI bytes (often GBK on zh-CN). Decode
+    # leniently so a reader thread can never raise UnicodeDecodeError, which
+    # would otherwise leave stdout/stderr as None.
+    return subprocess.run(
+        [schtasks_bin, *args],
+        check=check,
+        capture_output=True,
+        text=True,
+        errors="replace",
+    )
+
+
 def render_windows_task_xml(
     *,
     python_executable: str,
@@ -90,44 +103,27 @@ def install_windows_service(
         handle.write(xml)
         xml_path = Path(handle.name)
     try:
-        subprocess.run(
-            [schtasks_bin, "/Create", "/TN", TASK_NAME, "/XML", str(xml_path), "/F"],
+        _run_schtasks(
+            ["/Create", "/TN", TASK_NAME, "/XML", str(xml_path), "/F"],
+            schtasks_bin=schtasks_bin,
             check=True,
-            capture_output=True,
-            text=True,
         )
     finally:
         with contextlib.suppress(OSError):
             xml_path.unlink()
-    subprocess.run(
-        [schtasks_bin, "/Run", "/TN", TASK_NAME],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    _run_schtasks(["/Run", "/TN", TASK_NAME], schtasks_bin=schtasks_bin)
 
 
 def uninstall_windows_service(schtasks_bin: str = "schtasks") -> None:
-    subprocess.run(
-        [schtasks_bin, "/End", "/TN", TASK_NAME],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    subprocess.run(
-        [schtasks_bin, "/Delete", "/TN", TASK_NAME, "/F"],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    _run_schtasks(["/End", "/TN", TASK_NAME], schtasks_bin=schtasks_bin)
+    _run_schtasks(["/Delete", "/TN", TASK_NAME, "/F"], schtasks_bin=schtasks_bin)
 
 
 def windows_service_status(schtasks_bin: str = "schtasks") -> dict:
     try:
-        completed = subprocess.run(
-            [schtasks_bin, "/Query", "/TN", TASK_NAME, "/FO", "LIST", "/V"],
-            capture_output=True,
-            text=True,
+        completed = _run_schtasks(
+            ["/Query", "/TN", TASK_NAME, "/FO", "LIST", "/V"],
+            schtasks_bin=schtasks_bin,
         )
     except OSError as exc:
         # `doctor` must stay usable even when schtasks is unavailable or
@@ -141,7 +137,7 @@ def windows_service_status(schtasks_bin: str = "schtasks") -> dict:
             "returncode": None,
             "raw": f"schtasks unavailable: {exc}",
         }
-    raw_output = (completed.stdout or completed.stderr).strip()
+    raw_output = (completed.stdout or completed.stderr or "").strip()
     loaded = completed.returncode == 0
     status_text = _value_for(raw_output, "Status") if loaded else None
     last_result = _int_for(raw_output, "Last Result") if loaded else None

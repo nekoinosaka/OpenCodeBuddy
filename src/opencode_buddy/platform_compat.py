@@ -39,6 +39,37 @@ def posix_mode_bits_are_meaningful() -> bool:
     return os.name == "posix"
 
 
+def fsync_file(path) -> None:
+    """Flush a regular file to stable storage.
+
+    Windows requires a descriptor with write access for ``os.fsync`` (CRT
+    ``_commit`` semantics), so a read-only handle is not sufficient there.
+    """
+
+    flags = os.O_RDWR if IS_WINDOWS else os.O_RDONLY
+    descriptor = os.open(path, flags)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def fsync_directory(directory) -> None:
+    """Flush a directory entry to stable storage, where the platform allows it.
+
+    Windows cannot open a directory for ``os.fsync``; the entry update is left
+    to the filesystem there.
+    """
+
+    if not IS_POSIX:
+        return
+    descriptor = os.open(directory, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def fchmod(descriptor: int, mode: int) -> None:
     """Set permissions on an open descriptor, where the platform supports it."""
 

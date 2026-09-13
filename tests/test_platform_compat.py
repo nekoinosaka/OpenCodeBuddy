@@ -45,6 +45,13 @@ def test_fchmod_is_tolerant_when_unsupported(monkeypatch, tmp_path: Path):
         os.close(descriptor)
 
 
+def test_fsync_helpers_are_safe(tmp_path: Path):
+    target = tmp_path / "payload.bin"
+    target.write_bytes(b"payload")
+    platform_compat.fsync_file(target)      # must not raise
+    platform_compat.fsync_directory(tmp_path)
+
+
 def test_posix_mode_bits_are_only_meaningful_on_posix():
     assert platform_compat.posix_mode_bits_are_meaningful() == (os.name == "posix")
 

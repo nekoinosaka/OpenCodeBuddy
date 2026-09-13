@@ -557,7 +557,11 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
                         f"(last exit status: {status})."
                     )
                 ),
-                "next": "Run `opencode-buddy repair`; if it recurs, inspect the launchd error log.",
+                "next": (
+                    "Run `opencode-buddy repair`; if it recurs, inspect the Task Scheduler history."
+                    if _is_windows()
+                    else "Run `opencode-buddy repair`; if it recurs, inspect the launchd error log."
+                ),
             }
         )
     return problems

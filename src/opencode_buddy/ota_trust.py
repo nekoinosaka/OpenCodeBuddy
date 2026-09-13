@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Callable, Iterator, Optional, Sequence, Tuple
 
 from . import runtime
-from .platform_compat import fchmod, lock_file, unlock_file
+from .platform_compat import fchmod, fsync_directory, fsync_file, lock_file, unlock_file
 
 
 @dataclass(frozen=True)
@@ -76,11 +76,7 @@ def _run_openssl(
 
 
 def _fsync_directory(directory: Path) -> None:
-    descriptor = os.open(directory, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
+    fsync_directory(directory)
 
 
 def _write_all(descriptor: int, contents: bytes) -> None:
@@ -147,11 +143,7 @@ def _atomic_openssl_output(
         _run_openssl(arguments(temporary))
         if temporary.stat().st_size == 0:
             raise RuntimeError(f"openssl produced an empty file for {destination.name}")
-        sync_descriptor = os.open(temporary, os.O_RDONLY)
-        try:
-            os.fsync(sync_descriptor)
-        finally:
-            os.close(sync_descriptor)
+        fsync_file(temporary)
         temporary.chmod(mode)
         os.replace(temporary, destination)
         destination.chmod(mode)

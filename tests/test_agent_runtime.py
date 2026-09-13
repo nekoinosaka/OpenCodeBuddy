@@ -28,6 +28,7 @@ class _PeerSocket:
         return self.credentials
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Windows cannot express 0o700 mode bits")
 def test_runtime_root_is_created_or_corrected_to_owner_only(tmp_path):
     root = tmp_path / ".opencode-buddy"
     root.mkdir(mode=0o755)
