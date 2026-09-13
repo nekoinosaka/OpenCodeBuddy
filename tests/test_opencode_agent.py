@@ -320,6 +320,43 @@ def test_question_ask_returns_device_selection(tmp_path):
     assert resolved.question is None
 
 
+def test_question_ask_pushes_to_the_device_immediately(tmp_path):
+    async def exercise():
+        agent = BuddyAgent(
+            tmp_path / "state.json", clock=lambda: 100.0, opencode_permission_timeout=5.0
+        )
+        agent._ble = _CapturingBle()
+        agent._ble_connected = True
+        task = asyncio.create_task(
+            agent._handle_command(
+                {
+                    "cmd": "question_ask",
+                    "request_id": "que-1",
+                    "sessionID": "ses-1",
+                    "index": 0,
+                    "total": 1,
+                    "header": "Snack",
+                    "question": "Pick a snack",
+                    "options": ["Apple", "Chips", "Cookie"],
+                    "multiple": False,
+                }
+            )
+        )
+        for _ in range(200):
+            if agent._ble.sent_payloads:
+                break
+            await asyncio.sleep(0.01)
+        sent = list(agent._ble.sent_payloads)
+        await agent._handle_device_question("que-1", ["Chips"], False)
+        await task
+        return sent
+
+    sent = asyncio.run(exercise())
+
+    assert sent, "a question must be pushed to the device before it is answered"
+    assert sent[0]["question"]["text"] == "Pick a snack"
+
+
 def test_question_ask_reject(tmp_path):
     async def exercise():
         agent = BuddyAgent(
