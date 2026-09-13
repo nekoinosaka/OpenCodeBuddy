@@ -24,6 +24,8 @@
 </p>
 
 > 如果你想自己做硬件客户端，可以看 [firmware/REFERENCE.md](firmware/REFERENCE.md) 里的 BLE 协议和 JSON 负载定义。
+>
+> 完整中文使用文档：[docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md)。
 
 ## 项目包含什么
 

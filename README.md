@@ -25,6 +25,8 @@
 </p>
 
 > Building your own hardware client? See [firmware/REFERENCE.md](firmware/REFERENCE.md) for the BLE protocol and JSON payloads.
+>
+> 中文使用文档 / Chinese usage guide: [docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md).
 
 ## What ships
 
