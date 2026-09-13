@@ -864,6 +864,10 @@ class BuddyAgent:
         }
         waiter: asyncio.Future[dict[str, object]] = asyncio.get_running_loop().create_future()
         self._opencode_question_waiters[device_id] = waiter
+        # Push the question immediately, the way the permission path does.
+        # Publishing only on the periodic keepalive left each question of a
+        # set waiting for the next tick (seconds) before it reached the screen.
+        await self._publish_state()
         try:
             result = await asyncio.wait_for(
                 waiter, timeout=self._opencode_permission_timeout
