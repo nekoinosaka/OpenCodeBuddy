@@ -592,3 +592,17 @@ def test_version_flag_reports_project_version(capsys):
 
     assert exc_info.value.code == 0
     assert capsys.readouterr().out.strip() == f"code-buddy {_project_version()}"
+
+
+def test_doctor_reports_out_of_date_plugin():
+    problems = cli._doctor_problems(
+        {
+            "paired_device_id": "dev-1",
+            "opencode_plugin_installed": True,
+            "opencode_plugin_current": False,
+            "native_helper_error": None,
+            "agent_running": True,
+            "launchd": {"loaded": True},
+        }
+    )
+    assert any("out of date" in problem["problem"] for problem in problems)

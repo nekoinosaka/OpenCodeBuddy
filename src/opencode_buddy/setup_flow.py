@@ -66,6 +66,24 @@ def opencode_plugin_path() -> Path:
     return opencode_plugin_dir() / "code-buddy.js"
 
 
+def bundled_opencode_plugin_text() -> str:
+    source = resources.files("opencode_buddy").joinpath(
+        "opencode_plugin", "code-buddy.js"
+    )
+    with source.open("r", encoding="utf-8") as handle:
+        return handle.read()
+
+
+def opencode_plugin_is_current(destination: Path | None = None) -> bool:
+    destination = (
+        opencode_plugin_path() if destination is None else Path(destination)
+    )
+    try:
+        return destination.read_text(encoding="utf-8") == bundled_opencode_plugin_text()
+    except OSError:
+        return False
+
+
 def install_opencode_plugin(destination: Path | None = None) -> Path:
     destination = (
         opencode_plugin_path()
@@ -73,11 +91,7 @@ def install_opencode_plugin(destination: Path | None = None) -> Path:
         else Path(destination)
     )
     destination.parent.mkdir(parents=True, exist_ok=True)
-    source = resources.files("opencode_buddy").joinpath(
-        "opencode_plugin", "code-buddy.js"
-    )
-    with source.open("r", encoding="utf-8") as handle:
-        text = handle.read()
+    text = bundled_opencode_plugin_text()
     if not destination.exists() or destination.read_text(encoding="utf-8") != text:
         destination.write_text(text, encoding="utf-8")
     return destination

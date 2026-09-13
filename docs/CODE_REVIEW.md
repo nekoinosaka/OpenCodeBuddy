@@ -13,16 +13,16 @@
 
 | 编号 | 严重度 | 状态 | 问题 | 位置 |
 | --- | --- | --- | --- | --- |
-| A | **P0** | 已修 | 审批等待阻塞 `event` hook，并发审批只弹一次、其余卡在电脑端 | `opencode_plugin/code-buddy.js` |
-| B | **P0** | 部分 | 会话/消息状态只增不减，长期运行内存泄漏 | `opencode_events.py`、`agent.py` |
-| C | **P0** | 待修 | `/session` 历史 watcher 在真实 TUI 下不可达，"历史/用量来自 server"不成立 | `opencode_server.py`、`opencode_session_watcher.py`、文档 |
-| D | P1 | 待修 | 回包方法靠猜，OpenCode 改 API 会静默失败 | `opencode_plugin/code-buddy.js` |
-| E | P1 | 待修 | 回包 `directory` 可能取错（多项目/子目录） | `opencode_plugin/code-buddy.js:92` |
-| F | P1 | 待修 | 发现逻辑兜底过宽；`__SCAN_ONLY__` 语义可疑 | `ble_transport.py:60`、helper Swift |
-| G | P2 | 已修 | token 统计每次全量 `sum()`（O(n²)）且可能非单调 | `opencode_events.py` |
-| H | P2 | 待修 | `respond_permission` 文档/接口不一致；agent 侧 REST 回包为死代码 | `opencode_server.py:77`、`agent.py` |
-| I | P2 | 待修 | 审批标题/id 写入 OpenCode 日志（轻微信息暴露） | `opencode_plugin/code-buddy.js` |
-| J | P2 | 已知 | 预编译 OTA 固件 `code-buddy-sticks3-app.bin` 仍为旧品牌 | `src/opencode_buddy/firmware/` |
+| A | **P0** | ✅ 已修并验证 | 审批等待阻塞 `event` hook，并发审批只弹一次、其余卡在电脑端 | `opencode_plugin/code-buddy.js` |
+| B | **P0** | ✅ 已修 | 会话/消息状态只增不减，长期运行内存泄漏 | `opencode_events.py`、`agent.py` |
+| C | **P0** | ✅ 已修 | `/session` watcher 在真实 TUI 下不可达 | `agent.py`、文档 |
+| D | P1 | ✅ 已修 | 回包方法靠猜（实测 `postSessionIdPermissionsPermissionId` 有效） | `opencode_plugin/code-buddy.js` |
+| E | P1 | ✅ 已修 | 回包 `directory` 可能取错 | `agent.py` → 插件 |
+| F | P1 | ✅ 已修 | `__SCAN_ONLY__` 扫描时误连设备 | helper Swift |
+| G | P2 | ✅ 已修 | token 统计 O(n²) 且非单调 | `opencode_events.py` |
+| H | P2 | ✅ 已修 | `respond_permission` 文档/接口不一致；REST 死代码 | `opencode_server.py`、`agent.py` |
+| I | P2 | 不适用 | 仅记录 `type`/`id`，未记录 title | — |
+| J | P2 | ✅ 已修 | 预编译 OTA 固件 `code-buddy-sticks3-app.bin` 仍为旧品牌 | `src/opencode_buddy/firmware/` |
 
 ---
 
@@ -160,6 +160,20 @@ const dir = permission.directory || directory || undefined
 2. **C**：修正"历史/用量"实现与文档的一致性。
 3. **D/E**：把回包路径固定、把 `directory` 从 agent 透传。
 4. **F/H/I/J**：健壮性与整洁性。
+
+---
+
+## 六、修复后复测（关键）
+
+用 3 条访问不同外部路径（`/usr/share`、`/Library`、`/private/var`）的命令**并发**触发审批，OpenCode 日志：
+
+- `permission.asked queued` ×3（同一 run）
+- `permission decision … delivered=true method=postSessionIdPermissionsPermissionId` ×3，间隔约 1.5–2s
+- 设备依次弹出，用户逐个按键，电脑端对应提示逐个消失
+
+结论：**并发审批缺陷（A）已修复并验证**，且确认该 OpenCode 版本有效的回包方法为 `postSessionIdPermissionsPermissionId`。
+
+> 复盘：中途反复出现"电脑有、设备没有"，根因是**仓库中的插件改动没有同步到 `~/.config/opencode/plugins/`**，OpenCode 重启后加载的仍是旧阻塞版。为此新增 `doctor` 的插件漂移检测（已安装 ≠ 内置时告警），并提示运行 `code-buddy install-opencode-plugin`。
 
 ---
 

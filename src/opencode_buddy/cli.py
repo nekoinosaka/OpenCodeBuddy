@@ -412,6 +412,7 @@ def _doctor_payload(args: argparse.Namespace) -> dict[str, object]:
         "native_helper_error": helper_error,
         "opencode_plugin_path": str(plugin_path),
         "opencode_plugin_installed": plugin_path.is_file(),
+        "opencode_plugin_current": setup_flow.opencode_plugin_is_current(plugin_path),
         "opencode_server_url": default_server_url(),
         "service_installed": state.service_installed,
     }
@@ -457,6 +458,14 @@ def _doctor_problems(payload: dict[str, object]) -> list[dict[str, str]]:
             {
                 "problem": "The OpenCode bridge plugin is not installed.",
                 "reason": "OpenCode will not forward session events or approvals without it.",
+                "next": "Run `code-buddy install-opencode-plugin`, then restart opencode.",
+            }
+        )
+    elif not payload.get("opencode_plugin_current", True):
+        problems.append(
+            {
+                "problem": "The OpenCode bridge plugin is out of date.",
+                "reason": "The installed plugin differs from the one bundled with this build.",
                 "next": "Run `code-buddy install-opencode-plugin`, then restart opencode.",
             }
         )
