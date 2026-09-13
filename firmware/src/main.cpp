@@ -1872,7 +1872,7 @@ static void drawQuestionLandscape(const Palette& p) {
 }
 
 static void drawApproval() {
-  if (tama.qId[0]) { drawQuestionPortrait(); return; }
+  if (tama.qId[0] && !tama.promptId[0]) { drawQuestionPortrait(); return; }
   const Palette& p = characterPalette();
   const int AREA = 84;
   const PortraitApprovalLayout layout = portraitApprovalLayout(
@@ -2143,7 +2143,7 @@ static uint8_t runtimePromptScrollOffset(uint32_t now) {
 }
 
 static void drawLandscapeApproval(const Palette& p, uint8_t hintOffset) {
-  if (tama.qId[0]) { drawQuestionLandscape(p); return; }
+  if (tama.qId[0] && !tama.promptId[0]) { drawQuestionLandscape(p); return; }
   const int LW = 240, LH = 135, AREA = 88;
   const int FOOTER_Y = landscapeApprovalFooterY(LH, usageMeterBottomInset());
   const bool isQuestion = tama.qId[0] != 0;
@@ -2480,6 +2480,10 @@ void loop() {
       characterInvalidate();
       if (buddyMode) buddyInvalidate();
     }
+  }
+
+  if (responseSent && !tama.promptId[0] && !tama.qId[0]) {
+    responseSent = false;
   }
 
   bool inPrompt = (tama.promptId[0] || tama.qId[0]) && !responseSent;
