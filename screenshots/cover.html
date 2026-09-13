@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Bricolage"; src: url("file:///Users/ray/.agents/skills/canvas-design/canvas-fonts/BricolageGrotesque-Bold.ttf"); }
+  @font-face { font-family: "Instrument"; src: url("file:///Users/ray/.agents/skills/canvas-design/canvas-fonts/InstrumentSans-Regular.ttf"); }
+  @font-face { font-family: "JBMono"; src: url("file:///Users/ray/.agents/skills/canvas-design/canvas-fonts/JetBrainsMono-Regular.ttf"); }
+  @font-face { font-family: "JBMono"; font-weight: 700; src: url("file:///Users/ray/.agents/skills/canvas-design/canvas-fonts/JetBrainsMono-Bold.ttf"); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1600px; height: 1000px; }
+  body { background: #f4f3f1; font-family: "Instrument", -apple-system, sans-serif; color: #1b1b1b; padding: 54px 64px 40px; }
+
+  .head { text-align: center; }
+  .face { font-family: "JBMono", monospace; font-size: 15px; line-height: 1.15; color: #2a2a2a; letter-spacing: 1px; }
+  h1 { font-family: "Bricolage", sans-serif; font-size: 66px; letter-spacing: -1px; margin-top: 14px; }
+  .sub { font-size: 21px; color: #555; margin-top: 12px; line-height: 1.45; }
+  .sub b { color: #111; font-weight: 400; }
+
+  .devices { display: flex; justify-content: center; gap: 26px; margin-top: 40px; }
+  .device { width: 232px; height: 470px; background: #2a2a2a; border-radius: 26px; padding: 16px 14px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 14px 30px rgba(0,0,0,.16); }
+  .screen { width: 204px; height: 372px; background: #0a0a0a; border-radius: 10px; padding: 12px 12px; font-family: "JBMono", monospace; font-size: 12.5px; line-height: 1.5; overflow: hidden; }
+  .btn { width: 122px; height: 26px; background: #2f4fd8; border-radius: 13px; margin-top: auto; }
+  .dim { color: #8a8a8a; } .txt { color: #d8d8d8; } .hdr { color: #d8d8d8; }
+  .yel { color: #e8c04a; } .grn { color: #57d06a; } .red { color: #e8563f; } .blu { color: #6fa8ff; }
+  .big { font-size: 15px; font-weight: 700; }
+  .tag { color: #e8563f; }
+
+  .cards { display: flex; justify-content: center; gap: 22px; margin-top: 36px; }
+  .card { width: 288px; height: 132px; background: #fbfbfa; border: 1px solid #e4e2de; border-radius: 16px; padding: 20px 22px; }
+  .card h3 { font-family: "Instrument", sans-serif; font-size: 20px; margin: 10px 0 8px; }
+  .card p { font-size: 15px; color: #666; line-height: 1.4; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="face">.------.<br>| o  o |<br>|  __  |<br>'------'</div>
+    <h1>OpenCode Buddy</h1>
+    <div class="sub">A StickS3 companion for OpenCode,<br>adapted from Claude Desktop Buddy and CodeBuddy.</div>
+  </div>
+
+  <div class="devices">
+    <div class="device"><div class="screen">
+      <span class="yel">.------.</span><br>
+      <span class="yel">| o  o |</span><br>
+      <span class="yel">'------'</span><br>
+      <br>
+      <span class="txt">ray's Buddy</span> <span class="dim">1/2</span><br>
+      <span class="dim">mood</span>   <span class="red">&#9829; &#9829; &#9829; &#9825;</span><br>
+      <span class="dim">fed</span>    <span class="txt">&#9679;&#9679;&#9679;&#9679;&#9679;</span><span class="dim">&#9675;&#9675;&#9675;&#9675;&#9675;</span><br>
+      <span class="dim">energy</span> <span class="grn">&#9642;&#9642;&#9642;</span><span class="dim">&#9641;&#9641;</span><br>
+      <br>
+      <span class="tag big">Lv 174</span><br>
+      <span class="dim">approved</span>  <span class="txt">6</span><br>
+      <span class="dim">denied</span>    <span class="txt">3</span><br>
+      <span class="dim">napped</span>    <span class="txt">0h00m</span><br>
+      <span class="dim">tokens</span>    <span class="txt">8.7M</span><br>
+      <span class="dim">today</span>     <span class="txt">173.7K</span>
+    </div><div class="btn"></div></div>
+
+    <div class="device"><div class="screen">
+      <span class="dim">Info</span>                 <span class="dim">1/6</span><br>
+      <span class="tag">ABOUT</span><br>
+      <span class="txt">I watch your OpenCode</span><br>
+      <span class="txt">desktop sessions.</span><br>
+      <br>
+      <span class="txt">I sleep when nothing's</span><br>
+      <span class="txt">happening, wake when</span><br>
+      <span class="txt">you start working,</span><br>
+      <span class="txt">get impatient when</span><br>
+      <span class="txt">approvals pile up.</span><br>
+      <br>
+      <span class="txt">Press A on a prompt</span><br>
+      <span class="txt">to approve from here.</span><br>
+      <br>
+      <span class="dim">18 species. Settings</span><br>
+      <span class="dim">&gt; ascii pet to cycle.</span>
+    </div><div class="btn"></div></div>
+
+    <div class="device"><div class="screen">
+      <span class="txt">brightness 4/4</span><br>
+      <span class="txt">sound      </span><span class="grn">on</span><br>
+      <span class="txt">bluetooth  </span><span class="grn">on</span><br>
+      <span class="txt">wifi       </span><span class="dim">off</span><br>
+      <span class="txt">led        </span><span class="grn">on</span><br>
+      <span class="txt">transcript </span><span class="grn">on</span><br>
+      <span class="txt">clock rot  </span><span class="dim">auto</span><br>
+      <span class="grn">&gt; ascii pet  1/18</span><br>
+      <span class="txt">reset</span><br>
+      <span class="txt">back</span><br>
+      <br>
+      <span class="dim">Next &#9660;   Change &#9654;</span>
+    </div><div class="btn"></div></div>
+
+    <div class="device"><div class="screen">
+      <br>
+      <span class="red"> !  !  !</span><br>
+      <span class="yel">(  ._.  )</span><br>
+      <br>
+      <span class="tag">approve? 3s</span><br>
+      <span class="txt big">Bash</span><br>
+      <span class="txt">/bin/zsh -lc "rm -f</span><br>
+      <span class="txt">-- /tmp/build"</span><br>
+      <br>
+      <span class="grn">A:once</span> <span class="dim">holdA:always</span>
+    </div><div class="btn"></div></div>
+
+    <div class="device"><div class="screen">
+      <br><br>
+      <span class="yel">.------.</span><br>
+      <span class="yel">| o  o |</span><br>
+      <span class="yel">|  &#8255;&#8255;  |</span><br>
+      <span class="yel">'------'</span><br><br><br>
+      <span class="dim">No OpenCode</span><br>
+      <span class="dim">connected</span>
+    </div><div class="btn"></div></div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><span class="dot" style="background:#3fb950"></span><h3>Status</h3><p>Overview of mood, energy and daily stats.</p></div>
+    <div class="card"><span class="dot" style="background:#2f81f7"></span><h3>About</h3><p>Learn what OpenCode Buddy is and how it works.</p></div>
+    <div class="card"><span class="dot" style="background:#a371f7"></span><h3>Settings</h3><p>Customize your Buddy just the way you like.</p></div>
+    <div class="card"><span class="dot" style="background:#f0883e"></span><h3>Approve</h3><p>Review and approve commands. Hold A to always allow.</p></div>
+    <div class="card"><span class="dot" style="background:#8b949e"></span><h3>Offline</h3><p>Ready when you are. Waiting for connection.</p></div>
+  </div>
+</body>
+</html>
