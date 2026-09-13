@@ -22,9 +22,9 @@ int main() {
   expect_true(!mainSource.empty(), "orientation integration test should load firmware/src/main.cpp");
   expect_true(
     mainSource.find(
-      "bool renderSurface = !autoSurfaceAwaitingOrientation;"
+      "bool renderSurface = screenOrientRenderSurface("
     ) != std::string::npos,
-    "an unresolved auto surface must gate the entire update and render chain"
+    "the render surface must be gated through screenOrientRenderSurface"
   );
   expect_true(
     mainSource.find("screenOrientRuntimeModeChanged(") != std::string::npos &&
@@ -41,6 +41,23 @@ int main() {
               "remaining on the approval surface should not restart resolve every frame");
   expect_true(!screenOrientRuntimeModeChanged(true, false, false),
               "leaving runtime orientation entirely should use the ordinary eligibility exit");
+
+  expect_true(
+    !screenOrientRenderSurface(true, false),
+    "an unresolved auto surface without an approval must keep gating the render chain"
+  );
+  expect_true(
+    screenOrientRenderSurface(false, false),
+    "a resolved auto surface must render"
+  );
+  expect_true(
+    screenOrientRenderSurface(true, true),
+    "a pending approval must render even while the IMU pose is unresolved"
+  );
+  expect_true(
+    screenOrientRenderSurface(false, true),
+    "a pending approval on a resolved surface must render"
+  );
 
   ScreenOrientationRenderState gate = {};
   ClockOrientationState sideways = {};
