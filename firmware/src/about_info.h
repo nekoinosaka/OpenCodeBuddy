@@ -10,7 +10,7 @@ struct AboutInfo {
 
 inline AboutInfo currentAboutInfo() {
   return {
-    "Charlex",
+    "Ray",
     "OpenOpenCode Buddy",
     "firmware fork",
     "M5Stick S3",

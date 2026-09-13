@@ -14,7 +14,7 @@ static void expect_str_eq(const char* actual, const char* expected, const char* 
 int main() {
   AboutInfo info = currentAboutInfo();
 
-  expect_str_eq(info.made_by, "Charlex", "about page should show the requested maker name");
+  expect_str_eq(info.made_by, "Ray", "about page should show the requested maker name");
   expect_str_eq(info.source_line_1, "OpenOpenCode Buddy", "about page source should match the project name");
   expect_str_eq(info.source_line_2, "firmware fork", "about page should describe the firmware origin");
   expect_str_eq(info.hardware_line_1, "M5Stick S3", "about page should name the StickS3 hardware");

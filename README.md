@@ -16,7 +16,7 @@
 <p align="center">
   A StickS3 companion for <a href="https://opencode.ai">OpenCode</a>, adapted from
   <a href="https://github.com/anthropics/claude-desktop-buddy">Claude Desktop Buddy</a>
-  and <a href="https://github.com/CharlexH/OpenCodeBuddy">OpenCodeBuddy</a>.
+  and <a href="https://github.com/CharlexH/CodeBuddy">OpenCodeBuddy</a>.
 </p>
 
 <p align="center">
