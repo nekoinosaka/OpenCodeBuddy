@@ -221,4 +221,22 @@ Verification:
 
 - Host tests: `.venv/bin/pytest -q`
 - Firmware build: `cd firmware && pio run`
+
+## ⚠️ Device notice — this unit now runs Launcher
+
+This particular StickS3 has been flashed with
+[bmorcelli/Launcher](https://github.com/bmorcelli/Launcher) (2.9.1), and OpenCodeBuddy
+is installed as an app (in OTA slot `ota_0`) alongside a second firmware (Tarot).
+
+- **Do not run `pio run -t upload` / `pio run -t erase`** (or write a full image at `0x0`
+  with esptool). That overwrites the bootloader and partition table and **destroys
+  Launcher and the other firmware**.
+- **To update:** build the app-only image (`cd firmware && pio run`) and install it
+  through Launcher — the built-in `opencode-buddy firmware update` OTA path is inert
+  under Launcher's partition layout.
+- **To switch firmware:** cold boot (hold Power ~6 s to power off, then short press to
+  power on) → Launcher menu → pick an app.
+
+See [NOTICE.md](NOTICE.md) for the partition layout, the exact reinstall steps, and the
+known limitations (ASCII-only character mode, shared NVS).
 </details>
